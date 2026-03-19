@@ -11,8 +11,6 @@ export function registerJobsCommands(
   jobs
     .command("list")
     .description("List jobs (paginated)")
-    .option("--page-size <n>", "Items per page")
-    .option("--start-index <n>", "Starting index")
     .option("--start-date <date>", "Start date (YYYY-MM-DD)")
     .option("--end-date <date>", "End date (YYYY-MM-DD)")
     .option("--date-filter-type <type>", "Date field to filter on")
