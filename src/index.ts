@@ -6,6 +6,7 @@ import type { ApiClient } from "./api-client.js";
 import { registerPingCommand } from "./commands/ping.js";
 import { registerJobsCommands } from "./commands/jobs.js";
 import { registerContactsCommands } from "./commands/contacts.js";
+import { registerEstimatesCommands } from "./commands/estimates.js";
 
 const program = new Command();
 
@@ -38,6 +39,7 @@ function getClient(): ApiClient {
 registerPingCommand(program, getClient);
 registerJobsCommands(program, getClient);
 registerContactsCommands(program, getClient);
+registerEstimatesCommands(program, getClient);
 
 program.parseAsync().catch((err: Error) => {
   console.error(JSON.stringify({ error: err.message }));
