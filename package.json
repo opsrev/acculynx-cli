@@ -1,0 +1,32 @@
+{
+  "name": "@opsrev/acculynx-cli",
+  "version": "0.1.0",
+  "description": "CLI for the AccuLynx roofing CRM API",
+  "type": "module",
+  "bin": {
+    "acculynx": "./dist/index.js"
+  },
+  "scripts": {
+    "build": "tsup src/index.ts --format esm --dts --clean",
+    "dev": "tsx src/index.ts",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "prepublishOnly": "npm run build"
+  },
+  "keywords": ["acculynx", "cli", "roofing", "crm", "api"],
+  "license": "MIT",
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "files": ["dist"],
+  "dependencies": {
+    "commander": "^14.0.3"
+  },
+  "devDependencies": {
+    "@types/node": "^25.4.0",
+    "tsup": "^8.5.1",
+    "tsx": "^4.21.0",
+    "typescript": "^5.9.3",
+    "vitest": "^4.0.18"
+  }
+}
