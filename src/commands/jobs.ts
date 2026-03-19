@@ -66,8 +66,7 @@ export function registerJobsCommands(
     { name: "estimates", path: "estimates", desc: "List job estimates" },
     { name: "financials", path: "financials", desc: "Get job financials" },
     { name: "invoices", path: "invoices", desc: "List job invoices" },
-    { name: "milestones", path: "milestones", desc: "List job milestones" },
-    { name: "current-milestone", path: "current-milestone", desc: "Get current milestone" },
+    { name: "milestones", path: "milestone-history", desc: "List job milestone history" },
     { name: "payments", path: "payments", desc: "List job payments" },
     { name: "history", path: "history", desc: "Get job history" },
   ];

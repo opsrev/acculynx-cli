@@ -67,12 +67,12 @@ describe("jobs commands", () => {
     expect(mockClient.get).toHaveBeenCalledWith("/jobs/abc-123/contacts");
   });
 
-  it("jobs milestones calls GET /jobs/{jobId}/milestones", async () => {
+  it("jobs milestones calls GET /jobs/{jobId}/milestone-history", async () => {
     const { mockClient, program } = setup();
     mockClient.get = vi.fn().mockResolvedValue([]);
 
     await program.parseAsync(["node", "test", "jobs", "milestones", "abc-123"]);
 
-    expect(mockClient.get).toHaveBeenCalledWith("/jobs/abc-123/milestones");
+    expect(mockClient.get).toHaveBeenCalledWith("/jobs/abc-123/milestone-history");
   });
 });

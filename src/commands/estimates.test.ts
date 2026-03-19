@@ -40,30 +40,30 @@ describe("estimates commands", () => {
     expect(mockClient.get).toHaveBeenCalledWith("/estimates/e-1");
   });
 
-  it("estimates sections calls GET /estimates/sections", async () => {
+  it("estimates sections calls GET /estimates/{estimateId}/sections", async () => {
     const { mockClient, program } = setup();
     mockClient.get = vi.fn().mockResolvedValue([]);
 
-    await program.parseAsync(["node", "test", "estimates", "sections"]);
+    await program.parseAsync(["node", "test", "estimates", "sections", "e-1"]);
 
-    expect(mockClient.get).toHaveBeenCalledWith("/estimates/sections");
+    expect(mockClient.get).toHaveBeenCalledWith("/estimates/e-1/sections");
   });
 
-  it("estimates section calls GET /estimates/sections/{sectionId}", async () => {
+  it("estimates section calls GET /estimates/{estimateId}/sections/{sectionId}", async () => {
     const { mockClient, program } = setup();
     mockClient.get = vi.fn().mockResolvedValue({ id: "s-1" });
 
-    await program.parseAsync(["node", "test", "estimates", "section", "s-1"]);
+    await program.parseAsync(["node", "test", "estimates", "section", "e-1", "s-1"]);
 
-    expect(mockClient.get).toHaveBeenCalledWith("/estimates/sections/s-1");
+    expect(mockClient.get).toHaveBeenCalledWith("/estimates/e-1/sections/s-1");
   });
 
-  it("estimates items calls GET /estimates/sections/{sectionId}/items", async () => {
+  it("estimates items calls GET /estimates/{estimateId}/sections/{sectionId}/items", async () => {
     const { mockClient, program } = setup();
     mockClient.get = vi.fn().mockResolvedValue([]);
 
-    await program.parseAsync(["node", "test", "estimates", "items", "s-1"]);
+    await program.parseAsync(["node", "test", "estimates", "items", "e-1", "s-1"]);
 
-    expect(mockClient.get).toHaveBeenCalledWith("/estimates/sections/s-1/items");
+    expect(mockClient.get).toHaveBeenCalledWith("/estimates/e-1/sections/s-1/items");
   });
 });

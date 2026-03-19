@@ -29,27 +29,30 @@ export function registerEstimatesCommands(
 
   estimates
     .command("sections")
-    .description("List estimate sections")
-    .action(async () => {
-      const result = await getClient().get("/estimates/sections");
+    .argument("<estimateId>", "Estimate ID")
+    .description("List sections for an estimate")
+    .action(async (estimateId: string) => {
+      const result = await getClient().get(`/estimates/${estimateId}/sections`);
       console.log(JSON.stringify(result));
     });
 
   estimates
     .command("section")
+    .argument("<estimateId>", "Estimate ID")
     .argument("<sectionId>", "Section ID")
     .description("Get estimate section details")
-    .action(async (sectionId: string) => {
-      const result = await getClient().get(`/estimates/sections/${sectionId}`);
+    .action(async (estimateId: string, sectionId: string) => {
+      const result = await getClient().get(`/estimates/${estimateId}/sections/${sectionId}`);
       console.log(JSON.stringify(result));
     });
 
   estimates
     .command("items")
+    .argument("<estimateId>", "Estimate ID")
     .argument("<sectionId>", "Section ID")
     .description("List items in an estimate section")
-    .action(async (sectionId: string) => {
-      const result = await getClient().get(`/estimates/sections/${sectionId}/items`);
+    .action(async (estimateId: string, sectionId: string) => {
+      const result = await getClient().get(`/estimates/${estimateId}/sections/${sectionId}/items`);
       console.log(JSON.stringify(result));
     });
 }
