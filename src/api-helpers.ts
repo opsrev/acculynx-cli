@@ -1,6 +1,6 @@
 import type { ApiClient } from "./api-client.js";
 
-const DEFAULT_PAGE_SIZE = 100;
+const DEFAULT_PAGE_SIZE = 25;
 
 interface PaginatedResponse {
   count: number;

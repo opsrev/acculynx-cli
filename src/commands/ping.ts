@@ -9,7 +9,7 @@ export function registerPingCommand(
     .command("ping")
     .description("Health check — verify API key and connectivity")
     .action(async () => {
-      const result = await getClient().get("/ping");
+      const result = await getClient().get("/diagnostics/ping");
       console.log(JSON.stringify(result));
     });
 }

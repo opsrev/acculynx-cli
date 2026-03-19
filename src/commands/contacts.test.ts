@@ -5,7 +5,7 @@ import type { ApiClient } from "../api-client.js";
 
 function setup() {
   const mockClient: ApiClient = {
-    get: vi.fn().mockResolvedValue({ count: 0, pageSize: 100, pageStartIndex: 0, items: [] }),
+    get: vi.fn().mockResolvedValue({ count: 0, pageSize: 25, pageStartIndex: 0, items: [] }),
     post: vi.fn().mockResolvedValue({ id: 1 }),
   };
   vi.spyOn(console, "log").mockImplementation(() => {});
@@ -26,7 +26,7 @@ describe("contacts commands", () => {
     await program.parseAsync(["node", "test", "contacts", "list"]);
 
     expect(mockClient.get).toHaveBeenCalledWith("/contacts", expect.objectContaining({
-      pageSize: "100",
+      pageSize: "25",
       pageStartIndex: "0",
     }));
   });
