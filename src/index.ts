@@ -1,2 +1,41 @@
 #!/usr/bin/env node
-console.log("acculynx-cli");
+import { Command } from "commander";
+import { getConfig } from "./config.js";
+import { createApiClient } from "./api-client.js";
+import type { ApiClient } from "./api-client.js";
+import { registerPingCommand } from "./commands/ping.js";
+
+const program = new Command();
+
+program
+  .name("acculynx")
+  .description("AccuLynx CRM CLI for AI agents")
+  .version("0.1.0")
+  .exitOverride()
+  .configureOutput({
+    writeOut: (str) => process.stdout.write(str),
+    writeErr: (str) =>
+      process.stderr.write(JSON.stringify({ error: str.trim() }) + "\n"),
+  })
+  .option("--api-key <key>", "AccuLynx API key (env: ACCULYNX_API_KEY)");
+
+let _client: ApiClient | null = null;
+
+function getConfigFromProgram() {
+  const opts = program.opts();
+  return getConfig({ apiKey: opts.apiKey });
+}
+
+function getClient(): ApiClient {
+  if (!_client) {
+    _client = createApiClient(getConfigFromProgram());
+  }
+  return _client;
+}
+
+registerPingCommand(program, getClient);
+
+program.parseAsync().catch((err: Error) => {
+  console.error(JSON.stringify({ error: err.message }));
+  process.exit(1);
+});
