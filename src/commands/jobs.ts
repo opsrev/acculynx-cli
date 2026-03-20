@@ -18,7 +18,8 @@ export function registerJobsCommands(
     .option("--sort-by <field>", "Sort by: CreatedDate, MilestoneDate, ModifiedDate")
     .option("--sort-order <order>", "Ascending or Descending")
     .option("--includes <fields>", "Include: contact, initialAppointment")
-    .option("--limit <n>", "Max total results")
+    .option("--limit <n>", "Max total results (default: 25)")
+    .option("--all", "Fetch all results (no limit)")
     .action(async (opts) => {
       const params: Record<string, string> = {};
       if (opts.startDate) params.startDate = opts.startDate;
@@ -28,7 +29,7 @@ export function registerJobsCommands(
       if (opts.sortBy) params.sortBy = opts.sortBy;
       if (opts.sortOrder) params.sortOrder = opts.sortOrder;
       if (opts.includes) params.includes = opts.includes;
-      const limit = opts.limit ? parseInt(opts.limit, 10) : undefined;
+      const limit = opts.all ? Infinity : opts.limit ? parseInt(opts.limit, 10) : undefined;
       const result = await paginate(getClient(), "/jobs", params, limit);
       console.log(JSON.stringify(result));
     });
@@ -53,10 +54,12 @@ export function registerJobsCommands(
 
   jobs
     .command("search")
-    .description("Search jobs (pipe JSON search criteria to stdin)")
-    .action(async () => {
-      const body = await readStdin();
-      const result = await getClient().post("/jobs/search", body);
+    .description("Search jobs")
+    .requiredOption("--query <text>", "Search term (required)")
+    .action(async (opts) => {
+      const result = await getClient().post("/jobs/search", {
+        SearchTerm: opts.query,
+      });
       console.log(JSON.stringify(result));
     });
 
