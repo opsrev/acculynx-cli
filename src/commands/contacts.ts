@@ -41,9 +41,13 @@ export function registerContactsCommands(
     .command("search")
     .description("Search contacts")
     .requiredOption("--query <text>", "Search term (required)")
+    .option("--sort-by <field>", "Sort by field (default: LastName)", "LastName")
+    .option("--sort-order <order>", "Ascending or Descending (default: Ascending)", "Ascending")
     .action(async (opts) => {
       const result = await getClient().post("/contacts/search", {
         SearchTerm: opts.query,
+        SortBy: opts.sortBy,
+        SortOrder: opts.sortOrder,
       });
       console.log(JSON.stringify(result));
     });
