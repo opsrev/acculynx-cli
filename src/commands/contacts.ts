@@ -40,10 +40,10 @@ export function registerContactsCommands(
   contacts
     .command("search")
     .description("Search contacts")
-    .requiredOption("--query <text>", "Search query (required)")
+    .requiredOption("--query <text>", "Search term (required)")
     .action(async (opts) => {
       const result = await getClient().post("/contacts/search", {
-        query: opts.query,
+        SearchTerm: opts.query,
       });
       console.log(JSON.stringify(result));
     });

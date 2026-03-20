@@ -55,10 +55,10 @@ export function registerJobsCommands(
   jobs
     .command("search")
     .description("Search jobs")
-    .requiredOption("--query <text>", "Search query (required)")
+    .requiredOption("--query <text>", "Search term (required)")
     .action(async (opts) => {
       const result = await getClient().post("/jobs/search", {
-        query: opts.query,
+        SearchTerm: opts.query,
       });
       console.log(JSON.stringify(result));
     });
