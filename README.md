@@ -44,10 +44,10 @@ The `unofficial` commands use cookie-based authentication against AccuLynx's int
 
 ```
 acculynx ping                                  # Health check / verify API key
-acculynx jobs list                              # List jobs (paginated)
+acculynx jobs list [--limit <n>] [--all]         # List jobs (default: 25 results)
 acculynx jobs get <jobId>                       # Get job details
 acculynx jobs create                            # Create a job (JSON from stdin)
-acculynx jobs search                            # Search jobs (JSON from stdin)
+acculynx jobs search --query <text>             # Search jobs
 acculynx jobs contacts <jobId>                  # List job contacts
 acculynx jobs estimates <jobId>                 # List job estimates
 acculynx jobs financials <jobId>                # Get job financials
@@ -55,13 +55,13 @@ acculynx jobs invoices <jobId>                  # List job invoices
 acculynx jobs milestones <jobId>                # List job milestone history
 acculynx jobs payments <jobId>                  # List job payments
 acculynx jobs history <jobId>                   # Get job change history
-acculynx contacts list                          # List contacts (paginated)
+acculynx contacts list [--limit <n>] [--all]    # List contacts (default: 25 results)
 acculynx contacts get <contactId>               # Get contact details
 acculynx contacts create                        # Create a contact (JSON from stdin)
-acculynx contacts search                        # Search contacts (JSON from stdin)
+acculynx contacts search --query <text>         # Search contacts
 acculynx contacts emails <contactId>            # List contact email addresses
 acculynx contacts phones <contactId>            # List contact phone numbers
-acculynx estimates list                         # List estimates (paginated)
+acculynx estimates list [--limit <n>] [--all]   # List estimates (default: 25 results)
 acculynx estimates get <estimateId>             # Get estimate details
 acculynx estimates sections <estimateId>        # List sections for an estimate
 acculynx estimates section <estimateId> <secId> # Get section details
@@ -92,7 +92,17 @@ Copy the `id` into your `.env` as `ACCULYNX_COMPANY_ID`, then run `login` to cac
 
 Login caches session cookies to `~/.config/acculynx-cli/sessions/` so you only need to re-authenticate when the session expires. Multiple accounts/companies are supported -- each gets its own cached session.
 
-### Jobs list options
+### Pagination
+
+All list commands default to **25 results**. Use `--limit <n>` for a custom count or `--all` to fetch everything:
+
+```bash
+acculynx jobs list                  # 25 results (default)
+acculynx jobs list --limit 100      # 100 results
+acculynx jobs list --all            # all results
+```
+
+### Jobs list filters
 
 - `--start-date <YYYY-MM-DD>` -- filter by start date
 - `--end-date <YYYY-MM-DD>` -- filter by end date
@@ -101,15 +111,21 @@ Login caches session cookies to `~/.config/acculynx-cli/sessions/` so you only n
 - `--sort-by <field>` -- CreatedDate, MilestoneDate, or ModifiedDate
 - `--sort-order <order>` -- Ascending or Descending
 - `--includes <fields>` -- contact, initialAppointment
-- `--limit <n>` -- cap total results
+
+### Search
+
+```bash
+acculynx jobs search --query "smith"
+acculynx contacts search --query "smith"
+acculynx contacts search --query "smith" --sort-by LastName --sort-order Descending
+```
 
 ### Stdin commands
 
-Commands that create or search accept JSON piped via stdin:
+Commands that create resources accept JSON piped via stdin:
 
 ```bash
 echo '{"name": "New Job"}' | acculynx jobs create
-echo '{"query": "smith"}' | acculynx contacts search
 ```
 
 ## Output
