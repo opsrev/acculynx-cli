@@ -1,5 +1,24 @@
 # Changelog
 
+## [1.1.0](https://github.com/opsrev/acculynx-cli/compare/v1.0.0...v1.1.0) (2026-03-20)
+
+
+### Features
+
+* add unofficial web API commands for job documents ([3712b86](https://github.com/opsrev/acculynx-cli/commit/3712b861029510ff8d45720b11607f091311bc0e))
+* add unofficial web API commands for job documents ([80f8ac5](https://github.com/opsrev/acculynx-cli/commit/80f8ac533835fce1a584de8e22b98be07fc0598c))
+
+
+### Bug Fixes
+
+* add .env to gitignore to prevent credential leaks ([2bd5284](https://github.com/opsrev/acculynx-cli/commit/2bd528499649ea711a6391a6d52bd45c1f235570))
+* add required sort params to contacts search with sensible defaults ([9664647](https://github.com/opsrev/acculynx-cli/commit/966464734c8c1e83ccbded911f6c72480199f270))
+* add safe defaults for list pagination and search commands ([901d780](https://github.com/opsrev/acculynx-cli/commit/901d780e8ce2bb58506b5278b66c55d4d8797a86))
+* add safe defaults for list pagination and search flags ([5334d47](https://github.com/opsrev/acculynx-cli/commit/5334d4731564ef30563b6ddc0b55d5f2b6cc6b0a))
+* output help text as plain text instead of JSON ([d027d5a](https://github.com/opsrev/acculynx-cli/commit/d027d5a7d290b1c0a0d4eacee04380f39dc214c7))
+* output help text as plain text instead of JSON-wrapped ([f5b4dc4](https://github.com/opsrev/acculynx-cli/commit/f5b4dc4010ea3274a35835e47ba532ca7d4ede3f))
+* use correct SearchTerm field name in search API requests ([d6b962a](https://github.com/opsrev/acculynx-cli/commit/d6b962ac462702ccfb4627a199a85dd617d28d65))
+
 ## 1.0.0 (2026-03-19)
 
 
