@@ -11,9 +11,10 @@ export function registerEstimatesCommands(
   estimates
     .command("list")
     .description("List estimates (paginated)")
-    .option("--limit <n>", "Max total results")
+    .option("--limit <n>", "Max total results (default: 25)")
+    .option("--all", "Fetch all results (no limit)")
     .action(async (opts) => {
-      const limit = opts.limit ? parseInt(opts.limit, 10) : undefined;
+      const limit = opts.all ? Infinity : opts.limit ? parseInt(opts.limit, 10) : undefined;
       const result = await paginate(getClient(), "/estimates", {}, limit);
       console.log(JSON.stringify(result));
     });

@@ -35,7 +35,7 @@ describe("paginate", () => {
       post: vi.fn(),
     };
 
-    const result = await paginate(mockClient, "/jobs", {});
+    const result = await paginate(mockClient, "/jobs", {}, Infinity);
     expect(result).toHaveLength(27);
     expect(mockClient.get).toHaveBeenCalledTimes(2);
     expect(mockClient.get).toHaveBeenNthCalledWith(2, "/jobs", {

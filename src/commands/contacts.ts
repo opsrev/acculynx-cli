@@ -11,9 +11,10 @@ export function registerContactsCommands(
   contacts
     .command("list")
     .description("List contacts (paginated)")
-    .option("--limit <n>", "Max total results")
+    .option("--limit <n>", "Max total results (default: 25)")
+    .option("--all", "Fetch all results (no limit)")
     .action(async (opts) => {
-      const limit = opts.limit ? parseInt(opts.limit, 10) : undefined;
+      const limit = opts.all ? Infinity : opts.limit ? parseInt(opts.limit, 10) : undefined;
       const result = await paginate(getClient(), "/contacts", {}, limit);
       console.log(JSON.stringify(result));
     });
@@ -38,10 +39,12 @@ export function registerContactsCommands(
 
   contacts
     .command("search")
-    .description("Search contacts (pipe JSON search criteria to stdin)")
-    .action(async () => {
-      const body = await readStdin();
-      const result = await getClient().post("/contacts/search", body);
+    .description("Search contacts")
+    .requiredOption("--query <text>", "Search query (required)")
+    .action(async (opts) => {
+      const result = await getClient().post("/contacts/search", {
+        query: opts.query,
+      });
       console.log(JSON.stringify(result));
     });
 

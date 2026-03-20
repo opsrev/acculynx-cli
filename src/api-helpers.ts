@@ -1,6 +1,7 @@
 import type { ApiClient } from "./api-client.js";
 
 const DEFAULT_PAGE_SIZE = 25;
+const DEFAULT_LIMIT = 25;
 
 interface PaginatedResponse {
   count: number;
@@ -13,7 +14,7 @@ export async function paginate(
   client: ApiClient,
   path: string,
   params: Record<string, string>,
-  limit?: number
+  limit: number = DEFAULT_LIMIT
 ): Promise<unknown[]> {
   const results: unknown[] = [];
   let pageStartIndex = 0;
@@ -28,7 +29,7 @@ export async function paginate(
     const data = (await client.get(path, pageParams)) as PaginatedResponse;
     results.push(...data.items);
 
-    if (limit && results.length >= limit) {
+    if (limit !== Infinity && results.length >= limit) {
       return results.slice(0, limit);
     }
 
