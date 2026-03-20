@@ -17,8 +17,16 @@ program
   .exitOverride()
   .configureOutput({
     writeOut: (str) => process.stdout.write(str),
-    writeErr: (str) =>
-      process.stderr.write(JSON.stringify({ error: str.trim() }) + "\n"),
+    writeErr: (str) => {
+      const trimmed = str.trim();
+      if (trimmed === "(outputHelp)") {
+        return;
+      } else if (trimmed.startsWith("Usage:") || trimmed.startsWith("error:")) {
+        process.stderr.write(str);
+      } else {
+        process.stderr.write(JSON.stringify({ error: trimmed }) + "\n");
+      }
+    },
   })
   .option("--api-key <key>", "AccuLynx API key (env: ACCULYNX_API_KEY)");
 
@@ -42,6 +50,9 @@ registerContactsCommands(program, getClient);
 registerEstimatesCommands(program, getClient);
 
 program.parseAsync().catch((err: Error) => {
+  if (err.message === "(outputHelp)" || err.message === "(version)") {
+    return;
+  }
   console.error(JSON.stringify({ error: err.message }));
   process.exit(1);
 });
