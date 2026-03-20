@@ -8,7 +8,7 @@
   },
   "scripts": {
     "build": "tsup src/index.ts --format esm --dts --clean",
-    "dev": "tsx src/index.ts",
+    "dev": "tsx --env-file=.env src/index.ts",
     "test": "vitest run",
     "test:watch": "vitest",
     "prepublishOnly": "npm run build"

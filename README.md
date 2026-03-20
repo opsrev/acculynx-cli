@@ -12,13 +12,33 @@ npm install -g @opsrev/acculynx-cli
 
 ## Configuration
 
-Set environment variable or pass flag:
+Copy the example env file and fill in your credentials:
+
+```bash
+cp .env.example .env
+```
+
+Your `.env` is gitignored and will never be committed.
+
+### Official API
 
 | Env Var | Flag | Description |
 |---------|------|-------------|
 | `ACCULYNX_API_KEY` | `--api-key` | AccuLynx API key (required) |
 
 API keys are created by your AccuLynx account administrator under Account Settings.
+
+### Unofficial Web API
+
+The `unofficial` commands use cookie-based authentication against AccuLynx's internal web APIs. These provide access to features not available in the official API (job documents, dashboard, etc.).
+
+| Env Var | Flag | Description |
+|---------|------|-------------|
+| `ACCULYNX_EMAIL` | `--email` | Your AccuLynx login email |
+| `ACCULYNX_PASSWORD` | `--password` | Your AccuLynx password |
+| `ACCULYNX_COMPANY_ID` | `--company-id` | Company GUID from location selector |
+
+> **Note:** These endpoints are reverse-engineered from the AccuLynx web app and may break without notice.
 
 ## Commands
 
@@ -47,6 +67,30 @@ acculynx estimates sections <estimateId>        # List sections for an estimate
 acculynx estimates section <estimateId> <secId> # Get section details
 acculynx estimates items <estimateId> <secId>   # List items in a section
 ```
+
+### Unofficial commands
+
+Requires `ACCULYNX_EMAIL`, `ACCULYNX_PASSWORD`, and `ACCULYNX_COMPANY_ID` in your `.env` (or passed as flags).
+
+```
+acculynx unofficial companies                          # List available companies (discover your company ID)
+acculynx unofficial login                              # Authenticate and cache session
+acculynx unofficial logout                             # Remove cached session
+acculynx unofficial sessions                           # List cached sessions
+acculynx unofficial documents list <jobId>             # List all document folders/files for a job
+acculynx unofficial documents download <jobId> <fileId> [--output ./file.pdf]  # Download a document
+```
+
+**Getting started:** If you don't know your company ID, run `companies` first -- it logs in and returns all companies available to your account:
+
+```bash
+npm run dev -- unofficial companies
+# [{"id":"f104ba56-...","name":"My Roofing Co"},{"id":"7749e90f-...","name":"Sandbox"}]
+```
+
+Copy the `id` into your `.env` as `ACCULYNX_COMPANY_ID`, then run `login` to cache the session.
+
+Login caches session cookies to `~/.config/acculynx-cli/sessions/` so you only need to re-authenticate when the session expires. Multiple accounts/companies are supported -- each gets its own cached session.
 
 ### Jobs list options
 
@@ -84,11 +128,20 @@ acculynx jobs get "$JOB_ID" | jq .
 ## Development
 
 ```bash
+cp .env.example .env  # fill in your credentials
 npm install
 npm test              # run unit tests
-npm run dev -- --help # run in dev mode
+npm run dev -- --help # run in dev mode (auto-loads .env)
 npm run build         # build to dist/
 ./test-integration.sh # run integration tests (requires ACCULYNX_API_KEY)
+```
+
+The `npm run dev` script automatically loads your `.env` file via Node's `--env-file` flag (Node 20.6+). Examples:
+
+```bash
+npm run dev -- unofficial login
+npm run dev -- unofficial documents list <jobId>
+npm run dev -- jobs list --limit 5
 ```
 
 ## License

@@ -7,6 +7,7 @@ import { registerPingCommand } from "./commands/ping.js";
 import { registerJobsCommands } from "./commands/jobs.js";
 import { registerContactsCommands } from "./commands/contacts.js";
 import { registerEstimatesCommands } from "./commands/estimates.js";
+import { registerUnofficialCommands } from "./unofficial/commands/index.js";
 
 const program = new Command();
 
@@ -40,6 +41,7 @@ registerPingCommand(program, getClient);
 registerJobsCommands(program, getClient);
 registerContactsCommands(program, getClient);
 registerEstimatesCommands(program, getClient);
+registerUnofficialCommands(program);
 
 program.parseAsync().catch((err: Error) => {
   console.error(JSON.stringify({ error: err.message }));
