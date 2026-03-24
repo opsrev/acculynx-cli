@@ -15,6 +15,17 @@ export class CookieJar {
     this.cookies.set(domain, jar);
   }
 
+  /** Get a specific cookie value by name for a given URL. */
+  getCookie(url: string, name: string): string | undefined {
+    const domain = new URL(url).hostname;
+    for (const [d, jar] of this.cookies) {
+      if (domain === d || domain.endsWith("." + d)) {
+        if (jar.has(name)) return jar.get(name);
+      }
+    }
+    return undefined;
+  }
+
   /** Build a Cookie header string for a given URL. */
   headerFor(url: string): string {
     const domain = new URL(url).hostname;

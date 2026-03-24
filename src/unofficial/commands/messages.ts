@@ -161,4 +161,33 @@ export function registerMessagesCommands(
 
       console.log(JSON.stringify(result));
     });
+
+  messages
+    .command("post")
+    .argument("<jobId>", "Job ID (GUID)")
+    .argument("<message>", "Message text to post")
+    .description("Post a comment/message to a job")
+    .action(async (jobId: string, message: string) => {
+      const data = (await getClient().post(
+        `/api/jobs/${jobId}/Messages`,
+        {
+          JobId: jobId,
+          Message: message,
+          RoleId: "1111111",
+          MessageType: "General Comment",
+          emailRecipients: [],
+          index: -1,
+        }
+      )) as Record<string, unknown>;
+
+      console.log(
+        JSON.stringify({
+          id: data.JobMessageId,
+          jobId: data.JobId,
+          message: data.Message,
+          messageType: data.MessageType,
+          createdDate: data.CreatedDate,
+        })
+      );
+    });
 }
