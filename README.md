@@ -30,7 +30,7 @@ API keys are created by your AccuLynx account administrator under Account Settin
 
 ### Unofficial Web API
 
-The `unofficial` commands use cookie-based authentication against AccuLynx's internal web APIs. These provide access to features not available in the official API (job documents, dashboard, etc.).
+The `unofficial` commands use cookie-based authentication against AccuLynx's internal web APIs. These provide access to features not available in the official API (job documents, messages, etc.).
 
 | Env Var | Flag | Description |
 |---------|------|-------------|
@@ -79,7 +79,30 @@ acculynx unofficial logout                             # Remove cached session
 acculynx unofficial sessions                           # List cached sessions
 acculynx unofficial documents list <jobId>             # List all document folders/files for a job
 acculynx unofficial documents download <jobId> <fileId> [--output ./file.pdf]  # Download a document
+acculynx unofficial messages list <jobId>              # List all messages/comments for a job
+acculynx unofficial messages list <jobId> --count-only # Get message count only
+acculynx unofficial messages post <jobId> <message>    # Post a comment to a job
+acculynx unofficial messages post <jobId> <message> --notify <userId,...>  # Post and notify users
 ```
+
+#### Messages
+
+List all messages, comments, and emails on a job. HTML email content is automatically converted to lightweight markdown (headers, links, lists preserved; images and styles stripped) for clean AI agent consumption.
+
+```bash
+acculynx unofficial messages list <jobId>                          # all messages, newest first
+acculynx unofficial messages list <jobId> --sort "createdDate|asc" # oldest first
+acculynx unofficial messages list <jobId> --count-only             # just the count
+```
+
+Post a comment to a job, optionally notifying (tagging) users:
+
+```bash
+acculynx unofficial messages post <jobId> "Your message here"
+acculynx unofficial messages post <jobId> "Check this out" --notify "userId1,userId2"
+```
+
+User IDs for `--notify` come from the official users API (`/api/v2/users`).
 
 **Getting started:** If you don't know your company ID, run `companies` first -- it logs in and returns all companies available to your account:
 
