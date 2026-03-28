@@ -80,7 +80,7 @@ acculynx unofficial sessions                           # List cached sessions
 acculynx unofficial documents list <jobId>             # List all document folders/files for a job
 acculynx unofficial documents download <jobId> <fileId> [--output ./file.pdf]  # Download a document
 acculynx unofficial messages list <jobId>              # List all messages/comments for a job
-acculynx unofficial messages list <jobId> --type Email # Filter by type: Comment, Email, Signatures
+acculynx unofficial messages list <jobId> --type Email # Filter by type: Comment, Email, or Signatures
 acculynx unofficial messages list <jobId> --count-only # Get message count only
 acculynx unofficial messages post <jobId> <message>    # Post a comment to a job
 acculynx unofficial messages post <jobId> <message> --notify <userId,...>  # Post and notify users
@@ -94,7 +94,6 @@ List all messages, comments, and emails on a job. HTML email content is automati
 acculynx unofficial messages list <jobId>                          # all messages, newest first
 acculynx unofficial messages list <jobId> --sort "createdDate|asc" # oldest first
 acculynx unofficial messages list <jobId> --type Email             # only emails
-acculynx unofficial messages list <jobId> --type "Comment,Email"   # multiple types
 acculynx unofficial messages list <jobId> --count-only             # just the count
 ```
 
