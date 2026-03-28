@@ -101,11 +101,20 @@ export function registerMessagesCommands(
       "createdDate|desc"
     )
     .option("--count-only", "Return only the total count of messages")
+    .option(
+      "--type <types>",
+      "Filter by message type: Comment, Email, Signatures (comma-separated)"
+    )
     .description("List all messages and comments for a job")
     .action(async (jobId: string, opts) => {
       const params = new URLSearchParams({ sort: opts.sort });
       if (opts.countOnly) {
         params.set("countOnly", "true");
+      }
+      if (opts.type) {
+        for (const t of opts.type.split(",")) {
+          params.append("filters", `type=${t.trim()}`);
+        }
       }
 
       const data = (await getClient().get(
