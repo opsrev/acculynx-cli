@@ -1,5 +1,21 @@
 # Changelog
 
+## [1.2.0](https://github.com/opsrev/acculynx-cli/compare/v1.1.0...v1.2.0) (2026-03-28)
+
+
+### Features
+
+* add --notify flag to messages post for tagging users ([8b7aa0c](https://github.com/opsrev/acculynx-cli/commit/8b7aa0c2f36870dfb675747f253718ecacf20eab))
+* add --type filter to messages list (server-side) ([5b6c586](https://github.com/opsrev/acculynx-cli/commit/5b6c586220ab33d359d6bef8ce60c1bad321e3c1))
+* add unofficial job messages commands (list, post, notify) ([8e54002](https://github.com/opsrev/acculynx-cli/commit/8e54002e4bf8afe1a642d14f4c270ead51af6073))
+* add unofficial messages list command for job message feed ([0439b45](https://github.com/opsrev/acculynx-cli/commit/0439b4509ae0b860edea8ddf62225140077d7950))
+* add unofficial messages post command and POST support to client ([84edf77](https://github.com/opsrev/acculynx-cli/commit/84edf77a314eed45f71ed1cca93df7120fe0ac02))
+
+
+### Bug Fixes
+
+* simplify --type filter to single value (types are AND'd server-side) ([4b974e7](https://github.com/opsrev/acculynx-cli/commit/4b974e75a55cb390f06fb452ffc309c9bfeb053f))
+
 ## [1.1.0](https://github.com/opsrev/acculynx-cli/compare/v1.0.0...v1.1.0) (2026-03-20)
 
 
