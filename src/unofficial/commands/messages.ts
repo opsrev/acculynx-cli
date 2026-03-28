@@ -166,8 +166,16 @@ export function registerMessagesCommands(
     .command("post")
     .argument("<jobId>", "Job ID (GUID)")
     .argument("<message>", "Message text to post")
-    .description("Post a comment/message to a job")
-    .action(async (jobId: string, message: string) => {
+    .option(
+      "--notify <userIds>",
+      "Comma-separated user IDs (GUIDs) to notify"
+    )
+    .description("Post a comment/message to a job, optionally notifying users")
+    .action(async (jobId: string, message: string, opts) => {
+      const emailRecipients = opts.notify
+        ? opts.notify.split(",").map((id: string) => id.trim())
+        : [];
+
       const data = (await getClient().post(
         `/api/jobs/${jobId}/Messages`,
         {
@@ -175,7 +183,7 @@ export function registerMessagesCommands(
           Message: message,
           RoleId: "1111111",
           MessageType: "General Comment",
-          emailRecipients: [],
+          emailRecipients,
           index: -1,
         }
       )) as Record<string, unknown>;
@@ -187,6 +195,7 @@ export function registerMessagesCommands(
           message: data.Message,
           messageType: data.MessageType,
           createdDate: data.CreatedDate,
+          notified: emailRecipients.length,
         })
       );
     });
