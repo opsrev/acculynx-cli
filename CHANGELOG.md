@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.3.0](https://github.com/opsrev/acculynx-cli/compare/v1.2.0...v1.3.0) (2026-03-29)
+
+
+### Features
+
+* add unofficial milestones command ([88845b8](https://github.com/opsrev/acculynx-cli/commit/88845b870617d77502de19a0d92c0695d03eca84))
+* add unofficial milestones command to list and set job milestones ([fd52950](https://github.com/opsrev/acculynx-cli/commit/fd529503cf2eb020e02fc7de289d23f1379e5a3f))
+
 ## [1.2.0](https://github.com/opsrev/acculynx-cli/compare/v1.1.0...v1.2.0) (2026-03-28)
 
 
