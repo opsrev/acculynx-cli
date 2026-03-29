@@ -84,6 +84,9 @@ acculynx unofficial messages list <jobId> --type Email # Filter by type: Comment
 acculynx unofficial messages list <jobId> --count-only # Get message count only
 acculynx unofficial messages post <jobId> <message>    # Post a comment to a job
 acculynx unofficial messages post <jobId> <message> --notify <userId,...>  # Post and notify users
+acculynx unofficial milestones list <jobId>            # List workflow milestones/statuses for a job
+acculynx unofficial milestones set <jobId> <status>    # Set a job's milestone/status by name
+acculynx unofficial milestones set <jobId> <status> --message "note"  # Set with comment
 acculynx unofficial jobs list                          # List jobs (unofficial)
 acculynx unofficial jobs list --status <name>           # Filter by workflow status name
 acculynx unofficial jobs list --milestone <name>        # Filter by milestone name
@@ -108,6 +111,26 @@ acculynx unofficial messages post <jobId> "Check this out" --notify "userId1,use
 ```
 
 User IDs for `--notify` come from the official users API (`/api/v2/users`).
+
+#### Milestones
+
+AccuLynx workflows have milestones (Lead, Prospect, Approved, etc.) that contain custom statuses (Estimate Sent, Contract Signed, etc.). The official API only filters by top-level milestones. The unofficial milestones commands let you work with the granular workflow statuses.
+
+List all milestones and their statuses for a job:
+
+```bash
+acculynx unofficial milestones list <jobId>
+```
+
+Set a job to a specific workflow status by name (case-insensitive):
+
+```bash
+acculynx unofficial milestones set <jobId> "Estimate Sent"
+acculynx unofficial milestones set <jobId> "OpsRev: Estimate Ready for Review"
+acculynx unofficial milestones set <jobId> "Contract Signed" --message "Moving to contract phase"
+```
+
+If the status name doesn't match, the command returns the list of available statuses.
 
 #### Jobs (unofficial)
 
