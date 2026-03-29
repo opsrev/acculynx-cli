@@ -87,6 +87,9 @@ acculynx unofficial messages post <jobId> <message> --notify <userId,...>  # Pos
 acculynx unofficial milestones list <jobId>            # List workflow milestones/statuses for a job
 acculynx unofficial milestones set <jobId> <status>    # Set a job's milestone/status by name
 acculynx unofficial milestones set <jobId> <status> --message "note"  # Set with comment
+acculynx unofficial jobs list                          # List jobs (unofficial)
+acculynx unofficial jobs list --status <name>           # Filter by workflow status name
+acculynx unofficial jobs list --milestone <name>        # Filter by milestone name
 ```
 
 #### Messages
@@ -128,6 +131,20 @@ acculynx unofficial milestones set <jobId> "Contract Signed" --message "Moving t
 ```
 
 If the status name doesn't match, the command returns the list of available statuses.
+
+#### Jobs (unofficial)
+
+The official `jobs list --milestones` filter only accepts top-level milestone names (Lead, Prospect, Approved, etc.). The unofficial `jobs list` command supports filtering by custom workflow status names.
+
+```bash
+acculynx unofficial jobs list --status "Estimate Sent"                    # jobs in a specific status
+acculynx unofficial jobs list --status "OpsRev: Estimate Ready for Review" # custom status names work
+acculynx unofficial jobs list --milestone Prospect                        # filter by milestone
+acculynx unofficial jobs list --status "Estimate Sent" --query "Smith"    # combine with search
+acculynx unofficial jobs list --sort "lastTouched|desc" --page 2          # sort and paginate
+```
+
+The `--status` flag resolves the status name (case-insensitive) to a GUID via the company workflow configuration, then queries the internal job list API. If the name doesn't match, the command returns the list of available statuses.
 
 **Getting started:** If you don't know your company ID, run `companies` first -- it logs in and returns all companies available to your account:
 
