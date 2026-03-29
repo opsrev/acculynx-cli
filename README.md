@@ -84,6 +84,9 @@ acculynx unofficial messages list <jobId> --type Email # Filter by type: Comment
 acculynx unofficial messages list <jobId> --count-only # Get message count only
 acculynx unofficial messages post <jobId> <message>    # Post a comment to a job
 acculynx unofficial messages post <jobId> <message> --notify <userId,...>  # Post and notify users
+acculynx unofficial jobs list                          # List jobs (unofficial)
+acculynx unofficial jobs list --status <name>           # Filter by workflow status name
+acculynx unofficial jobs list --milestone <name>        # Filter by milestone name
 ```
 
 #### Messages
@@ -105,6 +108,20 @@ acculynx unofficial messages post <jobId> "Check this out" --notify "userId1,use
 ```
 
 User IDs for `--notify` come from the official users API (`/api/v2/users`).
+
+#### Jobs (unofficial)
+
+The official `jobs list --milestones` filter only accepts top-level milestone names (Lead, Prospect, Approved, etc.). The unofficial `jobs list` command supports filtering by custom workflow status names.
+
+```bash
+acculynx unofficial jobs list --status "Estimate Sent"                    # jobs in a specific status
+acculynx unofficial jobs list --status "OpsRev: Estimate Ready for Review" # custom status names work
+acculynx unofficial jobs list --milestone Prospect                        # filter by milestone
+acculynx unofficial jobs list --status "Estimate Sent" --query "Smith"    # combine with search
+acculynx unofficial jobs list --sort "lastTouched|desc" --page 2          # sort and paginate
+```
+
+The `--status` flag resolves the status name (case-insensitive) to a GUID via the company workflow configuration, then queries the internal job list API. If the name doesn't match, the command returns the list of available statuses.
 
 **Getting started:** If you don't know your company ID, run `companies` first -- it logs in and returns all companies available to your account:
 
