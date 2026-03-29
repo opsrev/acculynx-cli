@@ -7,6 +7,7 @@ import {
 import { registerLoginCommands } from "./login.js";
 import { registerDocumentsCommands } from "./documents.js";
 import { registerMessagesCommands } from "./messages.js";
+import { registerUnofficialJobsCommands } from "./jobs.js";
 
 function getSessionFromEnv() {
   const email = process.env.ACCULYNX_EMAIL;
@@ -46,4 +47,5 @@ export function registerUnofficialCommands(parentCmd: Command): void {
 
   registerDocumentsCommands(unofficial, getClient);
   registerMessagesCommands(unofficial, getClient);
+  registerUnofficialJobsCommands(unofficial, getClient);
 }
