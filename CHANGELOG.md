@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.5.1](https://github.com/opsrev/acculynx-cli/compare/v1.5.0...v1.5.1) (2026-04-05)
+
+
+### Bug Fixes
+
+* handle empty response body in postForm ([#16](https://github.com/opsrev/acculynx-cli/issues/16)) ([28165ca](https://github.com/opsrev/acculynx-cli/commit/28165ca3b79463006fedc767dd5663de48ef365b))
+
 ## [1.5.0](https://github.com/opsrev/acculynx-cli/compare/v1.4.0...v1.5.0) (2026-04-05)
 
 
