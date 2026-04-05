@@ -13,6 +13,7 @@ describe("paginate", () => {
     const mockClient: ApiClient = {
       get: vi.fn().mockResolvedValue({ count: 2, pageSize: 25, pageStartIndex: 0, items }),
       post: vi.fn(),
+      postForm: vi.fn(),
     };
 
     const result = await paginate(mockClient, "/jobs", {});
@@ -33,6 +34,7 @@ describe("paginate", () => {
         .mockResolvedValueOnce({ count: 27, pageSize: 25, pageStartIndex: 0, items: page1 })
         .mockResolvedValueOnce({ count: 27, pageSize: 25, pageStartIndex: 25, items: page2 }),
       post: vi.fn(),
+      postForm: vi.fn(),
     };
 
     const result = await paginate(mockClient, "/jobs", {}, Infinity);
@@ -49,6 +51,7 @@ describe("paginate", () => {
     const mockClient: ApiClient = {
       get: vi.fn().mockResolvedValue({ count: 50, pageSize: 25, pageStartIndex: 0, items: page1 }),
       post: vi.fn(),
+      postForm: vi.fn(),
     };
 
     const result = await paginate(mockClient, "/jobs", {}, 10);
@@ -59,6 +62,7 @@ describe("paginate", () => {
     const mockClient: ApiClient = {
       get: vi.fn().mockResolvedValue({ count: 0, pageSize: 25, pageStartIndex: 0, items: [] }),
       post: vi.fn(),
+      postForm: vi.fn(),
     };
 
     await paginate(mockClient, "/jobs", { startDate: "2026-01-01" });

@@ -1,6 +1,12 @@
+import { readFileSync } from "node:fs";
+import { basename, extname } from "node:path";
 import type { Command } from "commander";
 import type { ApiClient } from "../api-client.js";
 import { paginate, readStdin } from "../api-helpers.js";
+
+const DISALLOWED_EXTENSIONS = new Set([
+  ".exe", ".com", ".dll", ".msi", ".bat", ".cmd", ".sh", ".pl", ".vbs", ".py", ".php",
+]);
 
 export function registerJobsCommands(
   parentCmd: Command,
@@ -86,4 +92,56 @@ export function registerJobsCommands(
         console.log(JSON.stringify(result));
       });
   }
+
+  jobs
+    .command("document-folders")
+    .description("List document folders for the company")
+    .option("--page-size <n>", "Number of items per page")
+    .option("--record-start-index <n>", "Index of first element to return", "0")
+    .option("--sort-order <order>", "Ascending or Descending", "Ascending")
+    .action(async (opts) => {
+      const params: Record<string, string> = {
+        recordStartIndex: opts.recordStartIndex,
+        sortOrder: opts.sortOrder,
+      };
+      if (opts.pageSize) params.pageSize = opts.pageSize;
+      const result = await getClient().get(
+        "/company-settings/job-file-settings/document-folders",
+        params
+      );
+      console.log(JSON.stringify(result));
+    });
+
+  jobs
+    .command("upload-document")
+    .argument("<jobId>", "Job ID")
+    .argument("<filePath>", "Path to the file to upload")
+    .requiredOption("--folder-id <id>", "Document folder ID (required)")
+    .option("--description <text>", "Brief description of the file")
+    .option("--external-id <id>", "External reference identifier")
+    .option("--external-source <source>", "External reference source")
+    .description("Upload a document to a job")
+    .action(async (jobId: string, filePath: string, opts) => {
+      const ext = extname(filePath).toLowerCase();
+      if (DISALLOWED_EXTENSIONS.has(ext)) {
+        throw new Error(`File type ${ext} is not allowed`);
+      }
+
+      const fileBuffer = readFileSync(filePath);
+      const fileName = basename(filePath);
+      const file = new File([fileBuffer], fileName);
+
+      const form = new FormData();
+      form.append("file", file);
+      form.append("documentFolderId", opts.folderId);
+      if (opts.description) form.append("description", opts.description);
+      if (opts.externalId) form.append("externalId", opts.externalId);
+      if (opts.externalSource) form.append("externalSource", opts.externalSource);
+
+      const result = await getClient().postForm(
+        `/jobs/${jobId}/documents`,
+        form
+      );
+      console.log(JSON.stringify(result));
+    });
 }

@@ -8,6 +8,7 @@ describe("ping command", () => {
     const mockClient: ApiClient = {
       get: vi.fn().mockResolvedValue({ status: "ok" }),
       post: vi.fn(),
+      postForm: vi.fn(),
     };
     const logSpy = vi.spyOn(console, "log").mockImplementation(() => {});
 

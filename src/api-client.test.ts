@@ -131,6 +131,38 @@ describe("createApiClient", () => {
     vi.useRealTimers();
   });
 
+  it("makes POST form requests without Content-Type header", async () => {
+    const mockFetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: () => Promise.resolve({ id: "doc-1" }),
+    });
+    vi.stubGlobal("fetch", mockFetch);
+
+    const client = createApiClient({
+      baseUrl: "https://api.acculynx.com/api/v2",
+      apiKey: "test-key",
+    });
+
+    const form = new FormData();
+    form.append("file", new File(["data"], "test.pdf"));
+    form.append("documentFolderId", "folder-1");
+
+    const result = await client.postForm("/jobs/j1/documents", form);
+
+    expect(result).toEqual({ id: "doc-1" });
+    expect(mockFetch).toHaveBeenCalledWith(
+      "https://api.acculynx.com/api/v2/jobs/j1/documents",
+      expect.objectContaining({
+        method: "POST",
+        body: form,
+      })
+    );
+    // Content-Type must NOT be set so fetch auto-sets multipart boundary
+    const callHeaders = mockFetch.mock.calls[0][1].headers;
+    expect(callHeaders).not.toHaveProperty("Content-Type");
+    expect(callHeaders).toHaveProperty("Authorization", "Bearer test-key");
+  });
+
   it("throws after max retries on 429", async () => {
     vi.useFakeTimers();
     const mockResponse = {

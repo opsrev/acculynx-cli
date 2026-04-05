@@ -7,6 +7,7 @@ function setup() {
   const mockClient: ApiClient = {
     get: vi.fn().mockResolvedValue({ count: 0, pageSize: 25, pageStartIndex: 0, items: [] }),
     post: vi.fn(),
+    postForm: vi.fn(),
   };
   vi.spyOn(console, "log").mockImplementation(() => {});
   const program = new Command();
