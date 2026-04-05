@@ -3,6 +3,7 @@ import type { AccuLynxConfig } from "./config.js";
 export interface ApiClient {
   get(path: string, params?: Record<string, string>): Promise<unknown>;
   post(path: string, body: unknown): Promise<unknown>;
+  postForm(path: string, body: FormData): Promise<unknown>;
 }
 
 const MAX_RETRIES = 3;
@@ -75,8 +76,31 @@ export function createApiClient(config: AccuLynxConfig): ApiClient {
     return response.json();
   }
 
+  async function doPostForm(
+    path: string,
+    body: FormData
+  ): Promise<unknown> {
+    const url = `${config.baseUrl}${path}`;
+    const { "Content-Type": _, ...formHeaders } = headers;
+    const response = await fetchWithRetry(url, {
+      method: "POST",
+      headers: formHeaders,
+      body,
+    });
+
+    if (!response.ok) {
+      const text = await response.text();
+      throw new Error(
+        `API error (${response.status} ${response.statusText}): ${text}`
+      );
+    }
+
+    return response.json();
+  }
+
   return {
     get: doGet,
     post: doPost,
+    postForm: doPostForm,
   };
 }
