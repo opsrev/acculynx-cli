@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.5.0](https://github.com/opsrev/acculynx-cli/compare/v1.4.0...v1.5.0) (2026-04-05)
+
+
+### Features
+
+* add document upload and document folders commands ([#13](https://github.com/opsrev/acculynx-cli/issues/13)) ([124189e](https://github.com/opsrev/acculynx-cli/commit/124189e0bf9900e00e870c7a0f81a2c1e167183c))
+
 ## [1.4.0](https://github.com/opsrev/acculynx-cli/compare/v1.3.0...v1.4.0) (2026-04-05)
 
 
