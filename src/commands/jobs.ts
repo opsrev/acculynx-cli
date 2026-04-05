@@ -18,6 +18,7 @@ export function registerJobsCommands(
     .option("--sort-by <field>", "Sort by: CreatedDate, MilestoneDate, ModifiedDate")
     .option("--sort-order <order>", "Ascending or Descending")
     .option("--includes <fields>", "Include: contact, initialAppointment")
+    .option("--assignment <type>", "Filter by assignment: assigned, unassigned")
     .option("--limit <n>", "Max total results (default: 25)")
     .option("--all", "Fetch all results (no limit)")
     .action(async (opts) => {
@@ -29,6 +30,7 @@ export function registerJobsCommands(
       if (opts.sortBy) params.sortBy = opts.sortBy;
       if (opts.sortOrder) params.sortOrder = opts.sortOrder;
       if (opts.includes) params.includes = opts.includes;
+      if (opts.assignment) params.assignment = opts.assignment;
       const limit = opts.all ? Infinity : opts.limit ? parseInt(opts.limit, 10) : undefined;
       const result = await paginate(getClient(), "/jobs", params, limit);
       console.log(JSON.stringify(result));

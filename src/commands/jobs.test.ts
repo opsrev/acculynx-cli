@@ -67,6 +67,34 @@ describe("jobs commands", () => {
     expect(mockClient.get).toHaveBeenCalledWith("/jobs/abc-123/contacts");
   });
 
+  it("jobs list passes assignment filter", async () => {
+    const { mockClient, program } = setup();
+
+    await program.parseAsync([
+      "node", "test", "jobs", "list",
+      "--assignment", "unassigned",
+    ]);
+
+    expect(mockClient.get).toHaveBeenCalledWith("/jobs", expect.objectContaining({
+      assignment: "unassigned",
+    }));
+  });
+
+  it("jobs list passes assignment=assigned with other filters", async () => {
+    const { mockClient, program } = setup();
+
+    await program.parseAsync([
+      "node", "test", "jobs", "list",
+      "--milestones", "dead",
+      "--assignment", "assigned",
+    ]);
+
+    expect(mockClient.get).toHaveBeenCalledWith("/jobs", expect.objectContaining({
+      milestones: "dead",
+      assignment: "assigned",
+    }));
+  });
+
   it("jobs milestones calls GET /jobs/{jobId}/milestone-history", async () => {
     const { mockClient, program } = setup();
     mockClient.get = vi.fn().mockResolvedValue([]);
