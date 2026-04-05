@@ -134,7 +134,7 @@ describe("createApiClient", () => {
   it("makes POST form requests without Content-Type header", async () => {
     const mockFetch = vi.fn().mockResolvedValue({
       ok: true,
-      json: () => Promise.resolve({ id: "doc-1" }),
+      text: () => Promise.resolve(JSON.stringify({ id: "doc-1" })),
     });
     vi.stubGlobal("fetch", mockFetch);
 
