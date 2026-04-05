@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.4.0](https://github.com/opsrev/acculynx-cli/compare/v1.3.0...v1.4.0) (2026-04-05)
+
+
+### Features
+
+* add assignment filter to jobs list command ([8e48e75](https://github.com/opsrev/acculynx-cli/commit/8e48e75e7ad8bd76a97c20c57b8e7a77643605e6))
+* add assignment filter to jobs list command ([76fa685](https://github.com/opsrev/acculynx-cli/commit/76fa6859ed48f3736e20f94176400634a1c5bba2))
+
 ## [1.3.0](https://github.com/opsrev/acculynx-cli/compare/v1.2.0...v1.3.0) (2026-03-29)
 
 
