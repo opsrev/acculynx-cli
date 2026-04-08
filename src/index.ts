@@ -1,6 +1,10 @@
 #!/usr/bin/env node
+import { createRequire } from "node:module";
 import { Command } from "commander";
 import { getConfig } from "./config.js";
+
+const require = createRequire(import.meta.url);
+const { version } = require("../package.json") as { version: string };
 import { createApiClient } from "./api-client.js";
 import type { ApiClient } from "./api-client.js";
 import { registerPingCommand } from "./commands/ping.js";
@@ -14,7 +18,7 @@ const program = new Command();
 program
   .name("acculynx")
   .description("AccuLynx CRM CLI for AI agents")
-  .version("0.1.0")
+  .version(version)
   .exitOverride()
   .configureOutput({
     writeOut: (str) => process.stdout.write(str),
