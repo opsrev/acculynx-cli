@@ -8,6 +8,11 @@ vi.mock("node:fs", async (importOriginal) => {
   return { ...actual, readFileSync: vi.fn().mockReturnValue(Buffer.from("file-content")) };
 });
 
+vi.mock("../api-helpers.js", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("../api-helpers.js")>();
+  return { ...actual, readStdin: vi.fn().mockResolvedValue({ to: "John Doe", amount: 5000 }) };
+});
+
 function setup() {
   const mockClient: ApiClient = {
     get: vi.fn().mockResolvedValue({ count: 0, pageSize: 25, pageStartIndex: 0, items: [] }),
@@ -176,6 +181,23 @@ describe("jobs commands", () => {
     expect(form.get("description")).toBe("Monthly invoice");
     expect(form.get("externalId")).toBe("ext-1");
     expect(form.get("externalSource")).toBe("billing");
+  });
+
+  it("jobs add-expense calls POST /jobs/{jobId}/payments/expense with stdin body", async () => {
+    const { mockClient, program } = setup();
+    mockClient.post = vi.fn().mockResolvedValue({
+      id: "68badf8c-ec30-4531-a357-ff57bf12717b",
+      paymentType: "Additional Expense",
+      isParent: true,
+      parentId: "fd33bba2-cb19-4baa-b87c-47ee9e55d95e",
+    });
+
+    await program.parseAsync(["node", "test", "jobs", "add-expense", "job-123"]);
+
+    expect(mockClient.post).toHaveBeenCalledWith(
+      "/jobs/job-123/payments/expense",
+      { to: "John Doe", amount: 5000 }
+    );
   });
 
   it("jobs upload-document rejects disallowed file extensions", async () => {
