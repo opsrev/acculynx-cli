@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.6.1](https://github.com/opsrev/acculynx-cli/compare/v1.6.0...v1.6.1) (2026-04-08)
+
+
+### Bug Fixes
+
+* read CLI version from package.json instead of hardcoded value ([#20](https://github.com/opsrev/acculynx-cli/issues/20)) ([0b86fa2](https://github.com/opsrev/acculynx-cli/commit/0b86fa2fd41ecfd713399a4760d6787778ca17ed))
+
 ## [1.6.0](https://github.com/opsrev/acculynx-cli/compare/v1.5.1...v1.6.0) (2026-04-08)
 
 
