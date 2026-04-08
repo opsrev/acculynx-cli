@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.6.0](https://github.com/opsrev/acculynx-cli/compare/v1.5.1...v1.6.0) (2026-04-08)
+
+
+### Features
+
+* add job additional expense command ([#18](https://github.com/opsrev/acculynx-cli/issues/18)) ([d226fb2](https://github.com/opsrev/acculynx-cli/commit/d226fb27cd4fb92a08ca2030af9b1b0d4a0db9ba))
+
 ## [1.5.1](https://github.com/opsrev/acculynx-cli/compare/v1.5.0...v1.5.1) (2026-04-05)
 
 
