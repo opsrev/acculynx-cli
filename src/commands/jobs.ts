@@ -113,6 +113,19 @@ export function registerJobsCommands(
     });
 
   jobs
+    .command("add-expense")
+    .argument("<jobId>", "Job ID")
+    .description("Record an additional expense on a job (pipe JSON body to stdin)")
+    .action(async (jobId: string) => {
+      const body = await readStdin();
+      const result = await getClient().post(
+        `/jobs/${jobId}/payments/expense`,
+        body
+      );
+      console.log(JSON.stringify(result));
+    });
+
+  jobs
     .command("upload-document")
     .argument("<jobId>", "Job ID")
     .argument("<filePath>", "Path to the file to upload")
