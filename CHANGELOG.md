@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.7.0](https://github.com/opsrev/acculynx-cli/compare/v1.6.1...v1.7.0) (2026-04-09)
+
+
+### Features
+
+* support optional extended commands plugin ([#22](https://github.com/opsrev/acculynx-cli/issues/22)) ([e43eb96](https://github.com/opsrev/acculynx-cli/commit/e43eb96865ef3ccf33f54014c9f1ad5124719adb))
+
 ## [1.6.1](https://github.com/opsrev/acculynx-cli/compare/v1.6.0...v1.6.1) (2026-04-08)
 
 
