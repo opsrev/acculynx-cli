@@ -11,7 +11,6 @@ import { registerPingCommand } from "./commands/ping.js";
 import { registerJobsCommands } from "./commands/jobs.js";
 import { registerContactsCommands } from "./commands/contacts.js";
 import { registerEstimatesCommands } from "./commands/estimates.js";
-import { registerUnofficialCommands } from "./unofficial/commands/index.js";
 
 const program = new Command();
 
@@ -53,7 +52,13 @@ registerPingCommand(program, getClient);
 registerJobsCommands(program, getClient);
 registerContactsCommands(program, getClient);
 registerEstimatesCommands(program, getClient);
-registerUnofficialCommands(program);
+// Load extended commands if available
+try {
+  const mod = await import("@opsrev/acculynx-cli-unofficial");
+  mod.registerUnofficialCommands(program);
+} catch {
+  // Not installed
+}
 
 program.parseAsync().catch((err: Error) => {
   if (err.message === "(outputHelp)" || err.message === "(version)") {
