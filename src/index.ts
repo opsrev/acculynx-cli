@@ -55,7 +55,7 @@ registerEstimatesCommands(program, getClient);
 // Load extended commands if available
 try {
   const mod = await import("@opsrev/acculynx-cli-unofficial");
-  mod.registerUnofficialCommands(program);
+  mod.registerExtendedCommands(program);
 } catch {
   // Not installed
 }
