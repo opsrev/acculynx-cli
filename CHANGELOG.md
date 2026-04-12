@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.8.1](https://github.com/opsrev/acculynx-cli/compare/v1.8.0...v1.8.1) (2026-04-12)
+
+
+### Bug Fixes
+
+* use CJS resolution to find sibling global packages ([#27](https://github.com/opsrev/acculynx-cli/issues/27)) ([5570a05](https://github.com/opsrev/acculynx-cli/commit/5570a05da5ead26413c38e511fa1e75482f2e4d7))
+
 ## [1.8.0](https://github.com/opsrev/acculynx-cli/compare/v1.7.0...v1.8.0) (2026-04-12)
 
 
