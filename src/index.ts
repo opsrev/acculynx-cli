@@ -53,8 +53,11 @@ registerJobsCommands(program, getClient);
 registerContactsCommands(program, getClient);
 registerEstimatesCommands(program, getClient);
 // Load extended commands if available
+// Use CJS resolution (via createRequire) to find sibling global packages,
+// since ESM import() cannot resolve them on its own.
 try {
-  const mod = await import("@opsrev/acculynx-cli-unofficial");
+  const resolved = require.resolve("@opsrev/acculynx-cli-unofficial");
+  const mod = await import(resolved);
   mod.registerExtendedCommands(program);
 } catch {
   // Not installed
