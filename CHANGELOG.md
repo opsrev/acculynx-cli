@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.8.0](https://github.com/opsrev/acculynx-cli/compare/v1.7.0...v1.8.0) (2026-04-12)
+
+
+### Features
+
+* use registerExtendedCommands from unofficial package v2 ([#25](https://github.com/opsrev/acculynx-cli/issues/25)) ([637acc7](https://github.com/opsrev/acculynx-cli/commit/637acc7c1fc292a3725d1c1c6929ee1fe42ec38c))
+
 ## [1.7.0](https://github.com/opsrev/acculynx-cli/compare/v1.6.1...v1.7.0) (2026-04-09)
 
 
