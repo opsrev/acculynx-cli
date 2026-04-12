@@ -1,4 +1,4 @@
 declare module "@opsrev/acculynx-cli-unofficial" {
   import type { Command } from "commander";
-  export function registerUnofficialCommands(program: Command): void;
+  export function registerExtendedCommands(program: Command): void;
 }
