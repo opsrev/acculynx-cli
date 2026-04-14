@@ -222,4 +222,49 @@ describe("jobs commands", () => {
 
     expect(mockClient.get).toHaveBeenCalledWith("/jobs/job-123/representatives");
   });
+
+  it("jobs reps-assign posts to /jobs/{jobId}/representatives/company by default", async () => {
+    const { mockClient, program } = setup();
+    mockClient.post = vi.fn().mockResolvedValue({ status: 200 });
+
+    await program.parseAsync([
+      "node", "test", "jobs", "reps-assign", "job-123",
+      "--user-id", "u-1",
+    ]);
+
+    expect(mockClient.post).toHaveBeenCalledWith(
+      "/jobs/job-123/representatives/company",
+      { id: "u-1" }
+    );
+  });
+
+  it("jobs reps-assign uses --type to target a specific rep type", async () => {
+    const { mockClient, program } = setup();
+    mockClient.post = vi.fn().mockResolvedValue({ status: 200 });
+
+    await program.parseAsync([
+      "node", "test", "jobs", "reps-assign", "job-123",
+      "--user-id", "u-1",
+      "--type", "sales-owner",
+    ]);
+
+    expect(mockClient.post).toHaveBeenCalledWith(
+      "/jobs/job-123/representatives/sales-owner",
+      { id: "u-1" }
+    );
+  });
+
+  it("jobs reps-assign outputs the response", async () => {
+    const { mockClient, program } = setup();
+    mockClient.post = vi.fn().mockResolvedValue({ status: 200 });
+    const logSpy = vi.spyOn(console, "log");
+
+    await program.parseAsync([
+      "node", "test", "jobs", "reps-assign", "job-123",
+      "--user-id", "u-1",
+    ]);
+
+    const output = JSON.parse(logSpy.mock.calls[0][0]);
+    expect(output).toEqual({ status: 200 });
+  });
 });

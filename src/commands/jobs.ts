@@ -103,6 +103,20 @@ export function registerJobsCommands(
     });
 
   jobs
+    .command("reps-assign")
+    .argument("<jobId>", "Job ID")
+    .description("Assign a representative to a job")
+    .requiredOption("--user-id <id>", "User ID to assign")
+    .option("--type <type>", "Rep type: company, sales-owner, ar-owner", "company")
+    .action(async (jobId: string, opts) => {
+      const result = await getClient().post(
+        `/jobs/${jobId}/representatives/${opts.type}`,
+        { id: opts.userId }
+      );
+      console.log(JSON.stringify(result));
+    });
+
+  jobs
     .command("document-folders")
     .description("List document folders for the company")
     .option("--page-size <n>", "Number of items per page")
