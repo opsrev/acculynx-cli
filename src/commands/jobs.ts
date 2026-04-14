@@ -94,6 +94,15 @@ export function registerJobsCommands(
   }
 
   jobs
+    .command("reps")
+    .argument("<jobId>", "Job ID")
+    .description("List all representatives for a job")
+    .action(async (jobId: string) => {
+      const result = await getClient().get(`/jobs/${jobId}/representatives`);
+      console.log(JSON.stringify(result));
+    });
+
+  jobs
     .command("document-folders")
     .description("List document folders for the company")
     .option("--page-size <n>", "Number of items per page")

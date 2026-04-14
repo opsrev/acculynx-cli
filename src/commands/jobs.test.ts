@@ -210,4 +210,16 @@ describe("jobs commands", () => {
       ])
     ).rejects.toThrow("File type .exe is not allowed");
   });
+
+  it("jobs reps calls GET /jobs/{jobId}/representatives", async () => {
+    const { mockClient, program } = setup();
+    mockClient.get = vi.fn().mockResolvedValue({
+      count: 1, pageSize: 10, pageStartIndex: 0,
+      items: [{ id: "rep-1", type: "CompanyRepresentative", user: { id: "u-1" } }],
+    });
+
+    await program.parseAsync(["node", "test", "jobs", "reps", "job-123"]);
+
+    expect(mockClient.get).toHaveBeenCalledWith("/jobs/job-123/representatives");
+  });
 });
