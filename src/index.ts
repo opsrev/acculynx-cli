@@ -11,6 +11,7 @@ import { registerPingCommand } from "./commands/ping.js";
 import { registerJobsCommands } from "./commands/jobs.js";
 import { registerContactsCommands } from "./commands/contacts.js";
 import { registerEstimatesCommands } from "./commands/estimates.js";
+import { registerUsersCommands } from "./commands/users.js";
 
 const program = new Command();
 
@@ -52,6 +53,7 @@ registerPingCommand(program, getClient);
 registerJobsCommands(program, getClient);
 registerContactsCommands(program, getClient);
 registerEstimatesCommands(program, getClient);
+registerUsersCommands(program, getClient);
 // Load extended commands if available
 // Use CJS resolution (via createRequire) to find sibling global packages,
 // since ESM import() cannot resolve them on its own.

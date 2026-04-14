@@ -55,7 +55,7 @@ describe("createApiClient", () => {
   it("makes POST requests with JSON body", async () => {
     const mockFetch = vi.fn().mockResolvedValue({
       ok: true,
-      json: () => Promise.resolve({ id: 1 }),
+      text: () => Promise.resolve(JSON.stringify({ id: 1 })),
     });
     vi.stubGlobal("fetch", mockFetch);
 
