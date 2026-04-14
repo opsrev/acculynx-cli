@@ -73,7 +73,8 @@ export function createApiClient(config: AccuLynxConfig): ApiClient {
       );
     }
 
-    return response.json();
+    const text = await response.text();
+    return text ? JSON.parse(text) : { status: response.status };
   }
 
   async function doPostForm(
