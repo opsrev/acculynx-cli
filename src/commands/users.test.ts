@@ -45,4 +45,48 @@ describe("users commands", () => {
     expect(output).toHaveLength(2);
     expect(output[0].id).toBe("u-1");
   });
+
+  it("users list --search fetches all and filters by displayName", async () => {
+    const { mockClient, program } = setup();
+    const logSpy = vi.spyOn(console, "log");
+
+    await program.parseAsync(["node", "test", "users", "list", "--search", "alice"]);
+
+    expect(mockClient.get).toHaveBeenCalled();
+    const output = JSON.parse(logSpy.mock.calls[0][0]);
+    expect(output).toHaveLength(1);
+    expect(output[0].id).toBe("u-1");
+  });
+
+  it("users list --search is case-insensitive", async () => {
+    const { program } = setup();
+    const logSpy = vi.spyOn(console, "log");
+
+    await program.parseAsync(["node", "test", "users", "list", "--search", "JONES"]);
+
+    const output = JSON.parse(logSpy.mock.calls[0][0]);
+    expect(output).toHaveLength(1);
+    expect(output[0].id).toBe("u-2");
+  });
+
+  it("users list --search matches email", async () => {
+    const { program } = setup();
+    const logSpy = vi.spyOn(console, "log");
+
+    await program.parseAsync(["node", "test", "users", "list", "--search", "bob@example"]);
+
+    const output = JSON.parse(logSpy.mock.calls[0][0]);
+    expect(output).toHaveLength(1);
+    expect(output[0].id).toBe("u-2");
+  });
+
+  it("users list --search returns empty array when no match", async () => {
+    const { program } = setup();
+    const logSpy = vi.spyOn(console, "log");
+
+    await program.parseAsync(["node", "test", "users", "list", "--search", "nobody"]);
+
+    const output = JSON.parse(logSpy.mock.calls[0][0]);
+    expect(output).toHaveLength(0);
+  });
 });
