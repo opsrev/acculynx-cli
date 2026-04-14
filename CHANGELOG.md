@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.9.0](https://github.com/opsrev/acculynx-cli/compare/v1.8.1...v1.9.0) (2026-04-14)
+
+
+### Features
+
+* add users list and job representatives commands ([#30](https://github.com/opsrev/acculynx-cli/issues/30)) ([62081fe](https://github.com/opsrev/acculynx-cli/commit/62081feeea0bfcb97305b0e17d56b76541052b6c))
+
 ## [1.8.1](https://github.com/opsrev/acculynx-cli/compare/v1.8.0...v1.8.1) (2026-04-12)
 
 
