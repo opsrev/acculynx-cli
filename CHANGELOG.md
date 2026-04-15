@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.9.1](https://github.com/opsrev/acculynx-cli/compare/v1.9.0...v1.9.1) (2026-04-15)
+
+
+### Bug Fixes
+
+* default jobs list to sortBy=CreatedDate for stable pagination ([#32](https://github.com/opsrev/acculynx-cli/issues/32)) ([c8d5a86](https://github.com/opsrev/acculynx-cli/commit/c8d5a860c386bdbe04f4f17831ad8f3b4d685363))
+
 ## [1.9.0](https://github.com/opsrev/acculynx-cli/compare/v1.8.1...v1.9.0) (2026-04-14)
 
 
