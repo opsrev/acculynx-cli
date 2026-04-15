@@ -33,7 +33,7 @@ export function registerJobsCommands(
       if (opts.endDate) params.endDate = opts.endDate;
       if (opts.dateFilterType) params.dateFilterType = opts.dateFilterType;
       if (opts.milestones) params.milestones = opts.milestones;
-      if (opts.sortBy) params.sortBy = opts.sortBy;
+      params.sortBy = opts.sortBy ?? "CreatedDate";
       if (opts.sortOrder) params.sortOrder = opts.sortOrder;
       if (opts.includes) params.includes = opts.includes;
       if (opts.assignment) params.assignment = opts.assignment;
