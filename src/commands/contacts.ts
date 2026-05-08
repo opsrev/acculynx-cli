@@ -41,13 +41,19 @@ export function registerContactsCommands(
     .command("search")
     .description("Search contacts")
     .requiredOption("--query <text>", "Search term (required)")
-    .option("--sort-by <field>", "Sort by field (default: LastName)", "LastName")
-    .option("--sort-order <order>", "Ascending or Descending (default: Ascending)", "Ascending")
+    .requiredOption("--start-date <date>", "Start date (YYYY-MM-DD, required)")
+    .requiredOption("--end-date <date>", "End date (YYYY-MM-DD, required)")
+    .option("--sort-by <field>", "Sort by: CreatedDate, firstName, lastName", "lastName")
+    .option("--sort-order <order>", "Ascending or Descending", "Ascending")
     .action(async (opts) => {
       const result = await getClient().post("/contacts/search", {
-        SearchTerm: opts.query,
-        SortBy: opts.sortBy,
-        SortOrder: opts.sortOrder,
+        searchTerm: opts.query,
+        startDate: opts.startDate,
+        endDate: opts.endDate,
+        sort: {
+          sortColumn: opts.sortBy,
+          sortDirection: opts.sortOrder,
+        },
       });
       console.log(JSON.stringify(result));
     });

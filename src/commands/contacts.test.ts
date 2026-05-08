@@ -50,6 +50,26 @@ describe("contacts commands", () => {
     expect(mockClient.get).toHaveBeenCalledWith("/contacts/c-1/email-addresses");
   });
 
+  it("contacts search posts nested sort body with required dates", async () => {
+    const { mockClient, program } = setup();
+
+    await program.parseAsync([
+      "node", "test", "contacts", "search",
+      "--query", "smith",
+      "--start-date", "2020-01-01",
+      "--end-date", "2026-05-07",
+      "--sort-by", "firstName",
+      "--sort-order", "Descending",
+    ]);
+
+    expect(mockClient.post).toHaveBeenCalledWith("/contacts/search", {
+      searchTerm: "smith",
+      startDate: "2020-01-01",
+      endDate: "2026-05-07",
+      sort: { sortColumn: "firstName", sortDirection: "Descending" },
+    });
+  });
+
   it("contacts phones calls GET /contacts/{contactId}/phone-numbers", async () => {
     const { mockClient, program } = setup();
     mockClient.get = vi.fn().mockResolvedValue([]);
