@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.10.0](https://github.com/opsrev/acculynx-cli/compare/v1.9.2...v1.10.0) (2026-05-08)
+
+
+### Features
+
+* add contacts phone-add command for SMS opt-in ([#38](https://github.com/opsrev/acculynx-cli/issues/38)) ([45d3366](https://github.com/opsrev/acculynx-cli/commit/45d3366c77d49d366bb73ecd32c4a4285d6953e8)), closes [#37](https://github.com/opsrev/acculynx-cli/issues/37)
+
 ## [1.9.2](https://github.com/opsrev/acculynx-cli/compare/v1.9.1...v1.9.2) (2026-05-08)
 
 
