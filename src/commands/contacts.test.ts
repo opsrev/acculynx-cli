@@ -78,4 +78,37 @@ describe("contacts commands", () => {
 
     expect(mockClient.get).toHaveBeenCalledWith("/contacts/c-1/phone-numbers");
   });
+
+  it("contacts phone-add posts to /contacts/{contactId}/phone-numbers, defaulting smsOptOut to false", async () => {
+    const { mockClient, program } = setup();
+
+    await program.parseAsync([
+      "node", "test", "contacts", "phone-add", "c-1",
+      "--type", "Mobile",
+      "--number", "8885556969",
+    ]);
+
+    expect(mockClient.post).toHaveBeenCalledWith("/contacts/c-1/phone-numbers", {
+      type: "Mobile",
+      number: "8885556969",
+      smsOptOut: false,
+    });
+  });
+
+  it("contacts phone-add forwards --sms-opt-out as true", async () => {
+    const { mockClient, program } = setup();
+
+    await program.parseAsync([
+      "node", "test", "contacts", "phone-add", "c-1",
+      "--type", "Mobile",
+      "--number", "8885556969",
+      "--sms-opt-out",
+    ]);
+
+    expect(mockClient.post).toHaveBeenCalledWith("/contacts/c-1/phone-numbers", {
+      type: "Mobile",
+      number: "8885556969",
+      smsOptOut: true,
+    });
+  });
 });
