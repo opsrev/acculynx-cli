@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.9.2](https://github.com/opsrev/acculynx-cli/compare/v1.9.1...v1.9.2) (2026-05-08)
+
+
+### Bug Fixes
+
+* correct contacts search body shape and require date range ([#35](https://github.com/opsrev/acculynx-cli/issues/35)) ([e274643](https://github.com/opsrev/acculynx-cli/commit/e2746432b18237fcbaf98786b33f0f4c0f5e193f)), closes [#34](https://github.com/opsrev/acculynx-cli/issues/34)
+
 ## [1.9.1](https://github.com/opsrev/acculynx-cli/compare/v1.9.0...v1.9.1) (2026-04-15)
 
 
