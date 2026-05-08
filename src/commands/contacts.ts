@@ -75,4 +75,23 @@ export function registerContactsCommands(
       const result = await getClient().get(`/contacts/${contactId}/phone-numbers`);
       console.log(JSON.stringify(result));
     });
+
+  contacts
+    .command("phone-add")
+    .argument("<contactId>", "Contact ID")
+    .description("Add a phone number to a contact (omit --sms-opt-out to opt in to SMS)")
+    .requiredOption("--type <type>", "Phone type: Mobile, Home, Work")
+    .requiredOption("--number <number>", "Phone number")
+    .option("--sms-opt-out", "Opt this number out of SMS")
+    .action(async (contactId: string, opts) => {
+      const result = await getClient().post(
+        `/contacts/${contactId}/phone-numbers`,
+        {
+          type: opts.type,
+          number: opts.number,
+          smsOptOut: Boolean(opts.smsOptOut),
+        }
+      );
+      console.log(JSON.stringify(result));
+    });
 }
