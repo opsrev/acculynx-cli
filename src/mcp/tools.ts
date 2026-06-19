@@ -11,6 +11,8 @@ import {
   contactsList, contactGet, contactCreate, contactsSearch,
   contactEmails, contactPhones, contactPhoneAdd,
 } from "../ops/contacts.js";
+import { estimatesList, estimateGet, estimateSections, estimateSection, estimateItems } from "../ops/estimates.js";
+import { usersList } from "../ops/users.js";
 
 export interface McpTool {
   name: string;
@@ -124,7 +126,12 @@ export function buildTools(): McpTool[] {
       number: { type: "string", description: "Phone number." },
       smsOptOut: { type: "boolean", description: "Opt this number OUT of SMS (default false = opted in)." },
     }, required: ["contactId", "type", "number"] } },
-    // populated by Task 4
+    { name: "acculynx_estimates_list", description: "List estimates (paginated).", inputSchema: { type: "object", properties: { limit: LIMIT, all: ALL }, required: [] } },
+    { name: "acculynx_estimates_get", description: "Get one estimate by id.", inputSchema: { type: "object", properties: { estimateId: { type: "string", description: "Estimate id." } }, required: ["estimateId"] } },
+    { name: "acculynx_estimates_sections", description: "List an estimate's sections.", inputSchema: { type: "object", properties: { estimateId: { type: "string", description: "Estimate id." } }, required: ["estimateId"] } },
+    { name: "acculynx_estimates_section", description: "Get one estimate section.", inputSchema: { type: "object", properties: { estimateId: { type: "string", description: "Estimate id." }, sectionId: { type: "string", description: "Section id." } }, required: ["estimateId", "sectionId"] } },
+    { name: "acculynx_estimates_items", description: "List items in an estimate section.", inputSchema: { type: "object", properties: { estimateId: { type: "string", description: "Estimate id." }, sectionId: { type: "string", description: "Section id." } }, required: ["estimateId", "sectionId"] } },
+    { name: "acculynx_users_list", description: "List users (paginated). Optional client-side search by name/email.", inputSchema: { type: "object", properties: { limit: LIMIT, all: ALL, search: { type: "string", description: "Filter users by name or email (case-insensitive substring)." } }, required: [] } },
   ];
 }
 
@@ -202,7 +209,18 @@ export async function handleToolCall(
         return ok(await contactPhoneAdd(client, str(args.contactId) ?? "", {
           type: str(args.type) ?? "", number: str(args.number) ?? "", smsOptOut: boolOf(args.smsOptOut),
         }));
-      // cases added by Task 4
+      case "acculynx_estimates_list":
+        return ok(await estimatesList(client, resolveLimit(args)));
+      case "acculynx_estimates_get":
+        return ok(await estimateGet(client, str(args.estimateId) ?? ""));
+      case "acculynx_estimates_sections":
+        return ok(await estimateSections(client, str(args.estimateId) ?? ""));
+      case "acculynx_estimates_section":
+        return ok(await estimateSection(client, str(args.estimateId) ?? "", str(args.sectionId) ?? ""));
+      case "acculynx_estimates_items":
+        return ok(await estimateItems(client, str(args.estimateId) ?? "", str(args.sectionId) ?? ""));
+      case "acculynx_users_list":
+        return ok(await usersList(client, { limit: resolveLimit(args), search: str(args.search) }));
       default:
         return fail({ error: "unknown_tool", message: `Unknown tool: ${call.name}` });
     }

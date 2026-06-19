@@ -93,3 +93,27 @@ describe("contacts dispatch", () => {
     expect(typeProp.enum).toEqual(["Mobile", "Home", "Work"]);
   });
 });
+
+describe("estimates + users dispatch", () => {
+  it("acculynx_estimates_items builds the nested path", async () => {
+    const { client, calls } = fakeClient();
+    client.get = vi.fn(async (path: string) => { calls.push({ m: "get", path }); return []; });
+    await handleToolCall({ name: "acculynx_estimates_items", args: { estimateId: "e-1", sectionId: "s-1" } }, () => client);
+    expect(calls[0]).toMatchObject({ m: "get", path: "/estimates/e-1/sections/s-1/items" });
+  });
+
+  it("acculynx_users_list passes the search term through", async () => {
+    const { client, calls } = fakeClient();
+    client.get = vi.fn(async (path: string, params?: Record<string, string>) => {
+      calls.push({ m: "get", path, arg: params });
+      return { count: 0, pageSize: 25, pageStartIndex: 0, items: [] };
+    });
+    const res = await handleToolCall({ name: "acculynx_users_list", args: { search: "jane" } }, () => client);
+    expect(res.isError).toBeUndefined();
+    expect(calls[0]).toMatchObject({ m: "get", path: "/users" });
+  });
+
+  it("the full public surface advertises 30 tools", () => {
+    expect(buildTools()).toHaveLength(30);
+  });
+});
