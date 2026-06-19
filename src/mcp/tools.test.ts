@@ -70,3 +70,26 @@ describe("jobs + ping dispatch", () => {
     expect(sortBy.enum).toEqual(["CreatedDate", "MilestoneDate", "ModifiedDate"]);
   });
 });
+
+describe("contacts dispatch", () => {
+  it("acculynx_contacts_search posts the nested sort body with defaults", async () => {
+    const { client, calls } = fakeClient();
+    await handleToolCall({ name: "acculynx_contacts_search", args: { query: "smith", startDate: "2026-01-01", endDate: "2026-12-31" } }, () => client);
+    expect(calls[0]).toMatchObject({ m: "post", path: "/contacts/search", arg: {
+      searchTerm: "smith", startDate: "2026-01-01", endDate: "2026-12-31",
+      sort: { sortColumn: "lastName", sortDirection: "Ascending" },
+    } });
+  });
+
+  it("acculynx_contacts_phone_add coerces smsOptOut", async () => {
+    const { client, calls } = fakeClient();
+    await handleToolCall({ name: "acculynx_contacts_phone_add", args: { contactId: "c-1", type: "Mobile", number: "5551234" } }, () => client);
+    expect(calls[0]).toMatchObject({ m: "post", path: "/contacts/c-1/phone-numbers", arg: { type: "Mobile", number: "5551234", smsOptOut: false } });
+  });
+
+  it("acculynx_contacts_phone_add advertises the type enum", () => {
+    const tool = buildTools().find((t) => t.name === "acculynx_contacts_phone_add")!;
+    const typeProp = (tool.inputSchema.properties as Record<string, { enum?: string[] }>).type;
+    expect(typeProp.enum).toEqual(["Mobile", "Home", "Work"]);
+  });
+});

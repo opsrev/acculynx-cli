@@ -7,6 +7,10 @@ import {
   jobMilestones, jobPayments, jobHistory, jobReps,
   jobRepsAssign, documentFolders, jobAddExpense, jobUploadDocument,
 } from "../ops/jobs.js";
+import {
+  contactsList, contactGet, contactCreate, contactsSearch,
+  contactEmails, contactPhones, contactPhoneAdd,
+} from "../ops/contacts.js";
 
 export interface McpTool {
   name: string;
@@ -103,7 +107,24 @@ export function buildTools(): McpTool[] {
       externalId: { type: "string", description: "External reference id." },
       externalSource: { type: "string", description: "External reference source." },
     }, required: ["jobId", "filePath", "folderId"] } },
-    // populated by Tasks 3-4
+    { name: "acculynx_contacts_list", description: "List contacts (paginated).", inputSchema: { type: "object", properties: { limit: LIMIT, all: ALL }, required: [] } },
+    { name: "acculynx_contacts_get", description: "Get one contact by id.", inputSchema: { type: "object", properties: { contactId: { type: "string", description: "Contact id." } }, required: ["contactId"] } },
+    { name: "acculynx_contacts_create", description: "Create a contact from a JSON body.", inputSchema: { type: "object", properties: { body: BODY }, required: ["body"] } },
+    { name: "acculynx_contacts_search", description: "Search contacts within a date range.", inputSchema: { type: "object", properties: {
+      query: { type: "string", description: "Search term." },
+      startDate: DATE, endDate: DATE,
+      sortBy: { type: "string", enum: ["CreatedDate", "firstName", "lastName"], description: "Sort field (default lastName)." },
+      sortOrder: SORT_ORDER,
+    }, required: ["query", "startDate", "endDate"] } },
+    { name: "acculynx_contacts_emails", description: "List a contact's email addresses.", inputSchema: { type: "object", properties: { contactId: { type: "string", description: "Contact id." } }, required: ["contactId"] } },
+    { name: "acculynx_contacts_phones", description: "List a contact's phone numbers.", inputSchema: { type: "object", properties: { contactId: { type: "string", description: "Contact id." } }, required: ["contactId"] } },
+    { name: "acculynx_contacts_phone_add", description: "Add a phone number to a contact. Omit smsOptOut to opt in to SMS.", inputSchema: { type: "object", properties: {
+      contactId: { type: "string", description: "Contact id." },
+      type: { type: "string", enum: ["Mobile", "Home", "Work"], description: "Phone type." },
+      number: { type: "string", description: "Phone number." },
+      smsOptOut: { type: "boolean", description: "Opt this number OUT of SMS (default false = opted in)." },
+    }, required: ["contactId", "type", "number"] } },
+    // populated by Task 4
   ];
 }
 
@@ -162,7 +183,26 @@ export async function handleToolCall(
           folderId: str(args.folderId) ?? "", description: str(args.description),
           externalId: str(args.externalId), externalSource: str(args.externalSource),
         }));
-      // cases added by Tasks 3-4
+      case "acculynx_contacts_list":
+        return ok(await contactsList(client, resolveLimit(args)));
+      case "acculynx_contacts_get":
+        return ok(await contactGet(client, str(args.contactId) ?? ""));
+      case "acculynx_contacts_create":
+        return ok(await contactCreate(client, args.body));
+      case "acculynx_contacts_search":
+        return ok(await contactsSearch(client, {
+          query: str(args.query) ?? "", startDate: str(args.startDate) ?? "", endDate: str(args.endDate) ?? "",
+          sortBy: str(args.sortBy), sortOrder: str(args.sortOrder),
+        }));
+      case "acculynx_contacts_emails":
+        return ok(await contactEmails(client, str(args.contactId) ?? ""));
+      case "acculynx_contacts_phones":
+        return ok(await contactPhones(client, str(args.contactId) ?? ""));
+      case "acculynx_contacts_phone_add":
+        return ok(await contactPhoneAdd(client, str(args.contactId) ?? "", {
+          type: str(args.type) ?? "", number: str(args.number) ?? "", smsOptOut: boolOf(args.smsOptOut),
+        }));
+      // cases added by Task 4
       default:
         return fail({ error: "unknown_tool", message: `Unknown tool: ${call.name}` });
     }
