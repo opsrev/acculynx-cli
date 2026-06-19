@@ -1,6 +1,12 @@
 import type { Command } from "commander";
 import type { ApiClient } from "../api-client.js";
-import { paginate } from "../api-helpers.js";
+import {
+  estimatesList,
+  estimateGet,
+  estimateSections,
+  estimateSection,
+  estimateItems,
+} from "../ops/estimates.js";
 
 export function registerEstimatesCommands(
   parentCmd: Command,
@@ -15,8 +21,7 @@ export function registerEstimatesCommands(
     .option("--all", "Fetch all results (no limit)")
     .action(async (opts) => {
       const limit = opts.all ? Infinity : opts.limit ? parseInt(opts.limit, 10) : undefined;
-      const result = await paginate(getClient(), "/estimates", {}, limit);
-      console.log(JSON.stringify(result));
+      console.log(JSON.stringify(await estimatesList(getClient(), limit)));
     });
 
   estimates
@@ -24,8 +29,7 @@ export function registerEstimatesCommands(
     .argument("<estimateId>", "Estimate ID")
     .description("Get estimate details")
     .action(async (estimateId: string) => {
-      const result = await getClient().get(`/estimates/${estimateId}`);
-      console.log(JSON.stringify(result));
+      console.log(JSON.stringify(await estimateGet(getClient(), estimateId)));
     });
 
   estimates
@@ -33,8 +37,7 @@ export function registerEstimatesCommands(
     .argument("<estimateId>", "Estimate ID")
     .description("List sections for an estimate")
     .action(async (estimateId: string) => {
-      const result = await getClient().get(`/estimates/${estimateId}/sections`);
-      console.log(JSON.stringify(result));
+      console.log(JSON.stringify(await estimateSections(getClient(), estimateId)));
     });
 
   estimates
@@ -43,8 +46,7 @@ export function registerEstimatesCommands(
     .argument("<sectionId>", "Section ID")
     .description("Get estimate section details")
     .action(async (estimateId: string, sectionId: string) => {
-      const result = await getClient().get(`/estimates/${estimateId}/sections/${sectionId}`);
-      console.log(JSON.stringify(result));
+      console.log(JSON.stringify(await estimateSection(getClient(), estimateId, sectionId)));
     });
 
   estimates
@@ -53,7 +55,6 @@ export function registerEstimatesCommands(
     .argument("<sectionId>", "Section ID")
     .description("List items in an estimate section")
     .action(async (estimateId: string, sectionId: string) => {
-      const result = await getClient().get(`/estimates/${estimateId}/sections/${sectionId}/items`);
-      console.log(JSON.stringify(result));
+      console.log(JSON.stringify(await estimateItems(getClient(), estimateId, sectionId)));
     });
 }
