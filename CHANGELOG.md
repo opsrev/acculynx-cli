@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.11.0](https://github.com/opsrev/acculynx-cli/compare/v1.10.0...v1.11.0) (2026-06-19)
+
+
+### Features
+
+* dual CLI + MCP server with enforced tool schemas ([#40](https://github.com/opsrev/acculynx-cli/issues/40)) ([3b01f89](https://github.com/opsrev/acculynx-cli/commit/3b01f8997b961916d53a1c622ef60a23d97e9527))
+
 ## [1.10.0](https://github.com/opsrev/acculynx-cli/compare/v1.9.2...v1.10.0) (2026-05-08)
 
 
