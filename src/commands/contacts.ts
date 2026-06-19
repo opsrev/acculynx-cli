@@ -1,6 +1,15 @@
 import type { Command } from "commander";
 import type { ApiClient } from "../api-client.js";
-import { paginate, readStdin } from "../api-helpers.js";
+import { readStdin } from "../api-helpers.js";
+import {
+  contactsList,
+  contactGet,
+  contactCreate,
+  contactsSearch,
+  contactEmails,
+  contactPhones,
+  contactPhoneAdd,
+} from "../ops/contacts.js";
 
 export function registerContactsCommands(
   parentCmd: Command,
@@ -15,8 +24,7 @@ export function registerContactsCommands(
     .option("--all", "Fetch all results (no limit)")
     .action(async (opts) => {
       const limit = opts.all ? Infinity : opts.limit ? parseInt(opts.limit, 10) : undefined;
-      const result = await paginate(getClient(), "/contacts", {}, limit);
-      console.log(JSON.stringify(result));
+      console.log(JSON.stringify(await contactsList(getClient(), limit)));
     });
 
   contacts
@@ -24,8 +32,7 @@ export function registerContactsCommands(
     .argument("<contactId>", "Contact ID")
     .description("Get contact details")
     .action(async (contactId: string) => {
-      const result = await getClient().get(`/contacts/${contactId}`);
-      console.log(JSON.stringify(result));
+      console.log(JSON.stringify(await contactGet(getClient(), contactId)));
     });
 
   contacts
@@ -33,8 +40,7 @@ export function registerContactsCommands(
     .description("Create a contact (pipe JSON body to stdin)")
     .action(async () => {
       const body = await readStdin();
-      const result = await getClient().post("/contacts", body);
-      console.log(JSON.stringify(result));
+      console.log(JSON.stringify(await contactCreate(getClient(), body)));
     });
 
   contacts
@@ -46,14 +52,12 @@ export function registerContactsCommands(
     .option("--sort-by <field>", "Sort by: CreatedDate, firstName, lastName", "lastName")
     .option("--sort-order <order>", "Ascending or Descending", "Ascending")
     .action(async (opts) => {
-      const result = await getClient().post("/contacts/search", {
-        searchTerm: opts.query,
+      const result = await contactsSearch(getClient(), {
+        query: opts.query,
         startDate: opts.startDate,
         endDate: opts.endDate,
-        sort: {
-          sortColumn: opts.sortBy,
-          sortDirection: opts.sortOrder,
-        },
+        sortBy: opts.sortBy,
+        sortOrder: opts.sortOrder,
       });
       console.log(JSON.stringify(result));
     });
@@ -63,8 +67,7 @@ export function registerContactsCommands(
     .argument("<contactId>", "Contact ID")
     .description("List contact email addresses")
     .action(async (contactId: string) => {
-      const result = await getClient().get(`/contacts/${contactId}/email-addresses`);
-      console.log(JSON.stringify(result));
+      console.log(JSON.stringify(await contactEmails(getClient(), contactId)));
     });
 
   contacts
@@ -72,8 +75,7 @@ export function registerContactsCommands(
     .argument("<contactId>", "Contact ID")
     .description("List contact phone numbers")
     .action(async (contactId: string) => {
-      const result = await getClient().get(`/contacts/${contactId}/phone-numbers`);
-      console.log(JSON.stringify(result));
+      console.log(JSON.stringify(await contactPhones(getClient(), contactId)));
     });
 
   contacts
@@ -84,14 +86,11 @@ export function registerContactsCommands(
     .requiredOption("--number <number>", "Phone number")
     .option("--sms-opt-out", "Opt this number out of SMS")
     .action(async (contactId: string, opts) => {
-      const result = await getClient().post(
-        `/contacts/${contactId}/phone-numbers`,
-        {
-          type: opts.type,
-          number: opts.number,
-          smsOptOut: Boolean(opts.smsOptOut),
-        }
-      );
+      const result = await contactPhoneAdd(getClient(), contactId, {
+        type: opts.type,
+        number: opts.number,
+        smsOptOut: Boolean(opts.smsOptOut),
+      });
       console.log(JSON.stringify(result));
     });
 }
