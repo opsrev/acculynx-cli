@@ -1,12 +1,24 @@
-import { readFileSync } from "node:fs";
-import { basename, extname } from "node:path";
 import type { Command } from "commander";
 import type { ApiClient } from "../api-client.js";
-import { paginate, readStdin } from "../api-helpers.js";
-
-const DISALLOWED_EXTENSIONS = new Set([
-  ".exe", ".com", ".dll", ".msi", ".bat", ".cmd", ".sh", ".pl", ".vbs", ".py", ".php",
-]);
+import { readStdin } from "../api-helpers.js";
+import {
+  jobsList,
+  jobGet,
+  jobCreate,
+  jobSearch,
+  jobContacts,
+  jobEstimates,
+  jobFinancials,
+  jobInvoices,
+  jobMilestones,
+  jobPayments,
+  jobHistory,
+  jobReps,
+  jobRepsAssign,
+  documentFolders,
+  jobAddExpense,
+  jobUploadDocument,
+} from "../ops/jobs.js";
 
 export function registerJobsCommands(
   parentCmd: Command,
@@ -28,17 +40,18 @@ export function registerJobsCommands(
     .option("--limit <n>", "Max total results (default: 25)")
     .option("--all", "Fetch all results (no limit)")
     .action(async (opts) => {
-      const params: Record<string, string> = {};
-      if (opts.startDate) params.startDate = opts.startDate;
-      if (opts.endDate) params.endDate = opts.endDate;
-      if (opts.dateFilterType) params.dateFilterType = opts.dateFilterType;
-      if (opts.milestones) params.milestones = opts.milestones;
-      params.sortBy = opts.sortBy ?? "CreatedDate";
-      if (opts.sortOrder) params.sortOrder = opts.sortOrder;
-      if (opts.includes) params.includes = opts.includes;
-      if (opts.assignment) params.assignment = opts.assignment;
       const limit = opts.all ? Infinity : opts.limit ? parseInt(opts.limit, 10) : undefined;
-      const result = await paginate(getClient(), "/jobs", params, limit);
+      const result = await jobsList(getClient(), {
+        startDate: opts.startDate,
+        endDate: opts.endDate,
+        dateFilterType: opts.dateFilterType,
+        milestones: opts.milestones,
+        sortBy: opts.sortBy,
+        sortOrder: opts.sortOrder,
+        includes: opts.includes,
+        assignment: opts.assignment,
+        limit,
+      });
       console.log(JSON.stringify(result));
     });
 
@@ -47,8 +60,7 @@ export function registerJobsCommands(
     .argument("<jobId>", "Job ID")
     .description("Get job details")
     .action(async (jobId: string) => {
-      const result = await getClient().get(`/jobs/${jobId}`);
-      console.log(JSON.stringify(result));
+      console.log(JSON.stringify(await jobGet(getClient(), jobId)));
     });
 
   jobs
@@ -56,8 +68,7 @@ export function registerJobsCommands(
     .description("Create a job (pipe JSON body to stdin)")
     .action(async () => {
       const body = await readStdin();
-      const result = await getClient().post("/jobs", body);
-      console.log(JSON.stringify(result));
+      console.log(JSON.stringify(await jobCreate(getClient(), body)));
     });
 
   jobs
@@ -65,21 +76,17 @@ export function registerJobsCommands(
     .description("Search jobs")
     .requiredOption("--query <text>", "Search term (required)")
     .action(async (opts) => {
-      const result = await getClient().post("/jobs/search", {
-        SearchTerm: opts.query,
-      });
-      console.log(JSON.stringify(result));
+      console.log(JSON.stringify(await jobSearch(getClient(), opts.query)));
     });
 
-  // Sub-resource GET commands
-  const subResources = [
-    { name: "contacts", path: "contacts", desc: "List job contacts" },
-    { name: "estimates", path: "estimates", desc: "List job estimates" },
-    { name: "financials", path: "financials", desc: "Get job financials" },
-    { name: "invoices", path: "invoices", desc: "List job invoices" },
-    { name: "milestones", path: "milestone-history", desc: "List job milestone history" },
-    { name: "payments", path: "payments", desc: "List job payments" },
-    { name: "history", path: "history", desc: "Get job history" },
+  const subResources: Array<{ name: string; fn: (c: ApiClient, id: string) => Promise<unknown>; desc: string }> = [
+    { name: "contacts", fn: jobContacts, desc: "List job contacts" },
+    { name: "estimates", fn: jobEstimates, desc: "List job estimates" },
+    { name: "financials", fn: jobFinancials, desc: "Get job financials" },
+    { name: "invoices", fn: jobInvoices, desc: "List job invoices" },
+    { name: "milestones", fn: jobMilestones, desc: "List job milestone history" },
+    { name: "payments", fn: jobPayments, desc: "List job payments" },
+    { name: "history", fn: jobHistory, desc: "Get job history" },
   ];
 
   for (const sub of subResources) {
@@ -88,8 +95,7 @@ export function registerJobsCommands(
       .argument("<jobId>", "Job ID")
       .description(sub.desc)
       .action(async (jobId: string) => {
-        const result = await getClient().get(`/jobs/${jobId}/${sub.path}`);
-        console.log(JSON.stringify(result));
+        console.log(JSON.stringify(await sub.fn(getClient(), jobId)));
       });
   }
 
@@ -98,8 +104,7 @@ export function registerJobsCommands(
     .argument("<jobId>", "Job ID")
     .description("List all representatives for a job")
     .action(async (jobId: string) => {
-      const result = await getClient().get(`/jobs/${jobId}/representatives`);
-      console.log(JSON.stringify(result));
+      console.log(JSON.stringify(await jobReps(getClient(), jobId)));
     });
 
   jobs
@@ -109,10 +114,7 @@ export function registerJobsCommands(
     .requiredOption("--user-id <id>", "User ID to assign")
     .option("--type <type>", "Rep type: company, sales-owner, ar-owner", "company")
     .action(async (jobId: string, opts) => {
-      const result = await getClient().post(
-        `/jobs/${jobId}/representatives/${opts.type}`,
-        { id: opts.userId }
-      );
+      const result = await jobRepsAssign(getClient(), jobId, { userId: opts.userId, type: opts.type });
       console.log(JSON.stringify(result));
     });
 
@@ -123,15 +125,11 @@ export function registerJobsCommands(
     .option("--record-start-index <n>", "Index of first element to return", "0")
     .option("--sort-order <order>", "Ascending or Descending", "Ascending")
     .action(async (opts) => {
-      const params: Record<string, string> = {
+      const result = await documentFolders(getClient(), {
+        pageSize: opts.pageSize,
         recordStartIndex: opts.recordStartIndex,
         sortOrder: opts.sortOrder,
-      };
-      if (opts.pageSize) params.pageSize = opts.pageSize;
-      const result = await getClient().get(
-        "/company-settings/job-file-settings/document-folders",
-        params
-      );
+      });
       console.log(JSON.stringify(result));
     });
 
@@ -141,11 +139,7 @@ export function registerJobsCommands(
     .description("Record an additional expense on a job (pipe JSON body to stdin)")
     .action(async (jobId: string) => {
       const body = await readStdin();
-      const result = await getClient().post(
-        `/jobs/${jobId}/payments/expense`,
-        body
-      );
-      console.log(JSON.stringify(result));
+      console.log(JSON.stringify(await jobAddExpense(getClient(), jobId, body)));
     });
 
   jobs
@@ -158,26 +152,12 @@ export function registerJobsCommands(
     .option("--external-source <source>", "External reference source")
     .description("Upload a document to a job")
     .action(async (jobId: string, filePath: string, opts) => {
-      const ext = extname(filePath).toLowerCase();
-      if (DISALLOWED_EXTENSIONS.has(ext)) {
-        throw new Error(`File type ${ext} is not allowed`);
-      }
-
-      const fileBuffer = readFileSync(filePath);
-      const fileName = basename(filePath);
-      const file = new File([fileBuffer], fileName);
-
-      const form = new FormData();
-      form.append("file", file);
-      form.append("documentFolderId", opts.folderId);
-      if (opts.description) form.append("description", opts.description);
-      if (opts.externalId) form.append("externalId", opts.externalId);
-      if (opts.externalSource) form.append("externalSource", opts.externalSource);
-
-      const result = await getClient().postForm(
-        `/jobs/${jobId}/documents`,
-        form
-      );
+      const result = await jobUploadDocument(getClient(), jobId, filePath, {
+        folderId: opts.folderId,
+        description: opts.description,
+        externalId: opts.externalId,
+        externalSource: opts.externalSource,
+      });
       console.log(JSON.stringify(result));
     });
 }
