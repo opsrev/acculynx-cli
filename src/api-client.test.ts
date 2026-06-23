@@ -81,6 +81,32 @@ describe("createApiClient", () => {
     );
   });
 
+  it("strips non-ASCII out of POST JSON bodies", async () => {
+    const mockFetch = vi.fn().mockResolvedValue({
+      ok: true,
+      text: () => Promise.resolve(JSON.stringify({ id: 1 })),
+    });
+    vi.stubGlobal("fetch", mockFetch);
+
+    const client = createApiClient({
+      baseUrl: "https://api.acculynx.com/api/v2",
+      apiKey: "test-key",
+    });
+
+    await client.post("/jobs", {
+      description: "Roof — North",
+      nested: { note: "café" },
+      count: 3,
+    });
+
+    const sentBody = mockFetch.mock.calls[0][1].body as string;
+    expect(JSON.parse(sentBody)).toEqual({
+      description: "Roof - North",
+      nested: { note: "cafe" },
+      count: 3,
+    });
+  });
+
   it("throws on non-ok response with details", async () => {
     vi.stubGlobal(
       "fetch",
@@ -152,15 +178,63 @@ describe("createApiClient", () => {
     expect(result).toEqual({ id: "doc-1" });
     expect(mockFetch).toHaveBeenCalledWith(
       "https://api.acculynx.com/api/v2/jobs/j1/documents",
-      expect.objectContaining({
-        method: "POST",
-        body: form,
-      })
+      expect.objectContaining({ method: "POST" })
     );
+    // The form is rebuilt (sanitized) but carries the same fields through.
+    const sentForm = mockFetch.mock.calls[0][1].body as FormData;
+    expect(sentForm).toBeInstanceOf(FormData);
+    expect(sentForm.get("documentFolderId")).toBe("folder-1");
+    expect((sentForm.get("file") as File).name).toBe("test.pdf");
     // Content-Type must NOT be set so fetch auto-sets multipart boundary
     const callHeaders = mockFetch.mock.calls[0][1].headers;
     expect(callHeaders).not.toHaveProperty("Content-Type");
     expect(callHeaders).toHaveProperty("Authorization", "Bearer test-key");
+  });
+
+  it("strips non-ASCII out of POST form fields and the filename, preserving bytes", async () => {
+    const mockFetch = vi.fn().mockResolvedValue({
+      ok: true,
+      text: () => Promise.resolve(JSON.stringify({ id: "doc-1" })),
+    });
+    vi.stubGlobal("fetch", mockFetch);
+
+    const client = createApiClient({
+      baseUrl: "https://api.acculynx.com/api/v2",
+      apiKey: "test-key",
+    });
+
+    const form = new FormData();
+    form.append("file", new File(["binary-bytes"], "Photo — 1.jpg"));
+    form.append("description", "Roof — North");
+
+    await client.postForm("/jobs/j1/documents", form);
+
+    const sentForm = mockFetch.mock.calls[0][1].body as FormData;
+    expect(sentForm.get("description")).toBe("Roof - North");
+    const sentFile = sentForm.get("file") as File;
+    expect(sentFile.name).toBe("Photo - 1.jpg");
+    expect(await sentFile.text()).toBe("binary-bytes");
+  });
+
+  it("falls back to 'file' when a filename sanitizes to empty", async () => {
+    const mockFetch = vi.fn().mockResolvedValue({
+      ok: true,
+      text: () => Promise.resolve(JSON.stringify({ id: "doc-1" })),
+    });
+    vi.stubGlobal("fetch", mockFetch);
+
+    const client = createApiClient({
+      baseUrl: "https://api.acculynx.com/api/v2",
+      apiKey: "test-key",
+    });
+
+    const form = new FormData();
+    form.append("file", new File(["x"], "文档"));
+
+    await client.postForm("/jobs/j1/documents", form);
+
+    const sentForm = mockFetch.mock.calls[0][1].body as FormData;
+    expect((sentForm.get("file") as File).name).toBe("file");
   });
 
   it("throws after max retries on 429", async () => {

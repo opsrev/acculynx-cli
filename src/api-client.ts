@@ -1,4 +1,5 @@
 import type { AccuLynxConfig } from "./config.js";
+import { sanitizeDeep, toAscii } from "./sanitize.js";
 
 export interface ApiClient {
   get(path: string, params?: Record<string, string>): Promise<unknown>;
@@ -11,6 +12,20 @@ const INITIAL_DELAY_MS = 1000;
 
 async function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+// Rebuild a FormData with every text field and filename run through toAscii,
+// while preserving each file's binary content untouched.
+function sanitizeForm(form: FormData): FormData {
+  const out = new FormData();
+  for (const [key, value] of form.entries()) {
+    if (typeof value === "string") {
+      out.append(key, toAscii(value));
+    } else {
+      out.append(key, value, toAscii(value.name) || "file");
+    }
+  }
+  return out;
 }
 
 async function fetchWithRetry(
@@ -63,7 +78,7 @@ export function createApiClient(config: AccuLynxConfig): ApiClient {
     const response = await fetchWithRetry(url, {
       method: "POST",
       headers: { ...headers, "Content-Type": "application/json" },
-      body: JSON.stringify(body),
+      body: JSON.stringify(sanitizeDeep(body)),
     });
 
     if (!response.ok) {
@@ -86,7 +101,7 @@ export function createApiClient(config: AccuLynxConfig): ApiClient {
     const response = await fetchWithRetry(url, {
       method: "POST",
       headers: formHeaders,
-      body,
+      body: sanitizeForm(body),
     });
 
     if (!response.ok) {
