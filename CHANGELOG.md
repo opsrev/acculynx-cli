@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.12.0](https://github.com/opsrev/acculynx-cli/compare/v1.11.0...v1.12.0) (2026-06-23)
+
+
+### Features
+
+* strip non-ASCII from outgoing write payloads ([#42](https://github.com/opsrev/acculynx-cli/issues/42)) ([a1f49ca](https://github.com/opsrev/acculynx-cli/commit/a1f49cac491d67e7bc712f76dbee28f70b9a60d6))
+
 ## [1.11.0](https://github.com/opsrev/acculynx-cli/compare/v1.10.0...v1.11.0) (2026-06-19)
 
 
