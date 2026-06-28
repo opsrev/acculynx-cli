@@ -5,20 +5,26 @@ account-based parts that require a maintainer login. Glama and mcp.so crawl
 public GitHub repos automatically — once the repo has the `mcp` topic, no
 action is needed there.
 
-## 0. Publish the `acculynx-mcp` package (do this first)
+## 0. The `acculynx-mcp` package is published by CI
 
 The clean install commands (`npx -y acculynx-mcp`, `npm i -g acculynx-mcp`) and
-the official-registry entry all reference the `acculynx-mcp` npm package. Publish
-it once from `wrapper/`:
+the official-registry entry all reference the `acculynx-mcp` npm package. The
+`publish-wrapper` job in `.github/workflows/release.yml` runs on every push to
+`main` and publishes the wrapper, but only when `wrapper/package.json`'s version
+is not already on npm. So:
 
-```bash
-cd wrapper
-npm publish --access public      # requires `npm login` as a maintainer
-```
+- **First publish / new wrapper release:** bump `wrapper/package.json` `version`,
+  merge to `main`, and CI publishes it.
+- The wrapper depends on `@opsrev/acculynx-cli` at `^1.12.0`, so it auto-tracks
+  CLI releases at install time; you only bump/re-publish the wrapper when the
+  wrapper itself changes.
 
-It depends on `@opsrev/acculynx-cli` at `^1.12.0`, so it automatically tracks CLI
-releases — you only re-publish the wrapper if the wrapper itself changes. Until
-this is published, use the already-published combined form:
+This assumes `secrets.NPM_TOKEN` is allowed to publish the **unscoped**
+`acculynx-mcp` name. If that token is scoped to `@opsrev/*` only, either broaden
+it (or add a token that can) or publish once manually:
+`cd wrapper && npm publish --access public`.
+
+Until the first publish lands, the already-published combined form works:
 `npx -y -p @opsrev/acculynx-cli acculynx-mcp`.
 
 ## 1. Official MCP registry (registry.modelcontextprotocol.io)
