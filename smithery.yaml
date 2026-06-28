@@ -1,0 +1,34 @@
+startCommand:
+  type: stdio
+  configSchema:
+    type: object
+    required:
+      - apiKey
+    properties:
+      apiKey:
+        type: string
+        title: AccuLynx API key
+        description: Official AccuLynx API key (Account Settings -> API).
+      email:
+        type: string
+        title: AccuLynx email
+        description: Login email. Only needed for web-API tools.
+      password:
+        type: string
+        title: AccuLynx password
+        description: Login password. Only needed for web-API tools.
+      companyId:
+        type: string
+        title: AccuLynx company ID
+        description: Company GUID. Only needed for web-API tools.
+  commandFunction: |
+    (config) => ({
+      command: 'npx',
+      args: ['-y', 'acculynx-mcp'],
+      env: Object.assign(
+        { ACCULYNX_API_KEY: config.apiKey },
+        config.email ? { ACCULYNX_EMAIL: config.email } : {},
+        config.password ? { ACCULYNX_PASSWORD: config.password } : {},
+        config.companyId ? { ACCULYNX_COMPANY_ID: config.companyId } : {}
+      )
+    })
