@@ -70,3 +70,30 @@ jobs:
         run: npm publish
         env:
           NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  # The acculynx-mcp wrapper is an independent, unscoped package with its own
+  # version, so it is published outside the CLI's release-please flow: this job
+  # publishes it whenever wrapper/package.json's version is not already on npm.
+  # To cut a new wrapper release, bump that version and merge to main.
+  publish-wrapper:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          registry-url: https://registry.npmjs.org
+
+      - name: Publish acculynx-mcp wrapper if its version is new
+        working-directory: wrapper
+        run: |
+          VER=$(node -p "require('./package.json').version")
+          if npm view "acculynx-mcp@$VER" version > /dev/null 2>&1; then
+            echo "acculynx-mcp@$VER already on npm - skipping."
+          else
+            echo "Publishing acculynx-mcp@$VER"
+            npm publish --access public
+          fi
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}

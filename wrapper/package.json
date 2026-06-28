@@ -1,0 +1,42 @@
+{
+  "name": "acculynx-mcp",
+  "version": "1.0.0",
+  "description": "AccuLynx MCP server — use the AccuLynx roofing CRM in Claude Desktop, Cursor, and any MCP client.",
+  "type": "module",
+  "bin": {
+    "acculynx-mcp": "./bin/acculynx-mcp.js"
+  },
+  "mcpName": "io.github.opsrev/acculynx",
+  "keywords": [
+    "acculynx",
+    "acculynx-mcp",
+    "mcp",
+    "model-context-protocol",
+    "modelcontextprotocol",
+    "claude",
+    "claude-desktop",
+    "cursor",
+    "ai-agents",
+    "roofing",
+    "roofing-crm",
+    "crm"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/opsrev/acculynx-cli.git"
+  },
+  "homepage": "https://github.com/opsrev/acculynx-cli#readme",
+  "bugs": {
+    "url": "https://github.com/opsrev/acculynx-cli/issues"
+  },
+  "license": "MIT",
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "files": [
+    "bin"
+  ],
+  "dependencies": {
+    "@opsrev/acculynx-cli": "^1.12.0"
+  }
+}
