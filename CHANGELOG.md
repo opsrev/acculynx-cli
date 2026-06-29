@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.13.1](https://github.com/opsrev/acculynx-cli/compare/v1.13.0...v1.13.1) (2026-06-29)
+
+
+### Bug Fixes
+
+* correct work/trade type API field names and request bodies ([#47](https://github.com/opsrev/acculynx-cli/issues/47)) ([9cb214c](https://github.com/opsrev/acculynx-cli/commit/9cb214c1453182e19981a423274e0bf3129eb689))
+
 ## [1.13.0](https://github.com/opsrev/acculynx-cli/compare/v1.12.0...v1.13.0) (2026-06-29)
 
 
