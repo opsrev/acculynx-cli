@@ -81,6 +81,75 @@ describe("createApiClient", () => {
     );
   });
 
+  it("makes PUT requests with JSON body", async () => {
+    const mockFetch = vi.fn().mockResolvedValue({
+      ok: true,
+      status: 204,
+      text: () => Promise.resolve(""),
+    });
+    vi.stubGlobal("fetch", mockFetch);
+
+    const client = createApiClient({
+      baseUrl: "https://api.acculynx.com/api/v2",
+      apiKey: "test-key",
+    });
+
+    const result = await client.put("/jobs/j1/work-type", { id: 1 });
+
+    // 204 No Content -> echo the status back to the caller.
+    expect(result).toEqual({ status: 204 });
+    expect(mockFetch).toHaveBeenCalledWith(
+      "https://api.acculynx.com/api/v2/jobs/j1/work-type",
+      expect.objectContaining({
+        method: "PUT",
+        headers: expect.objectContaining({
+          Authorization: "Bearer test-key",
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        }),
+        body: JSON.stringify({ id: 1 }),
+      })
+    );
+  });
+
+  it("strips non-ASCII out of PUT JSON bodies", async () => {
+    const mockFetch = vi.fn().mockResolvedValue({
+      ok: true,
+      status: 204,
+      text: () => Promise.resolve(""),
+    });
+    vi.stubGlobal("fetch", mockFetch);
+
+    const client = createApiClient({
+      baseUrl: "https://api.acculynx.com/api/v2",
+      apiKey: "test-key",
+    });
+
+    await client.put("/jobs/j1/trade-types", { items: [{ id: "café" }] });
+
+    const sentBody = mockFetch.mock.calls[0][1].body as string;
+    expect(JSON.parse(sentBody)).toEqual({ items: [{ id: "cafe" }] });
+  });
+
+  it("throws on non-ok PUT response with details", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({
+        ok: false,
+        status: 400,
+        statusText: "Bad Request",
+        text: () => Promise.resolve("invalid work type"),
+      })
+    );
+
+    const client = createApiClient({
+      baseUrl: "https://api.acculynx.com/api/v2",
+      apiKey: "test-key",
+    });
+
+    await expect(client.put("/jobs/j1/work-type", { id: 999 })).rejects.toThrow("400");
+  });
+
   it("strips non-ASCII out of POST JSON bodies", async () => {
     const mockFetch = vi.fn().mockResolvedValue({
       ok: true,

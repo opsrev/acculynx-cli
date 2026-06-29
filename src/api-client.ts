@@ -4,6 +4,7 @@ import { sanitizeDeep, toAscii } from "./sanitize.js";
 export interface ApiClient {
   get(path: string, params?: Record<string, string>): Promise<unknown>;
   post(path: string, body: unknown): Promise<unknown>;
+  put(path: string, body: unknown): Promise<unknown>;
   postForm(path: string, body: FormData): Promise<unknown>;
 }
 
@@ -92,6 +93,25 @@ export function createApiClient(config: AccuLynxConfig): ApiClient {
     return text ? JSON.parse(text) : { status: response.status };
   }
 
+  async function doPut(path: string, body: unknown): Promise<unknown> {
+    const url = `${config.baseUrl}${path}`;
+    const response = await fetchWithRetry(url, {
+      method: "PUT",
+      headers: { ...headers, "Content-Type": "application/json" },
+      body: JSON.stringify(sanitizeDeep(body)),
+    });
+
+    if (!response.ok) {
+      const text = await response.text();
+      throw new Error(
+        `API error (${response.status} ${response.statusText}): ${text}`
+      );
+    }
+
+    const text = await response.text();
+    return text ? JSON.parse(text) : { status: response.status };
+  }
+
   async function doPostForm(
     path: string,
     body: FormData
@@ -118,6 +138,7 @@ export function createApiClient(config: AccuLynxConfig): ApiClient {
   return {
     get: doGet,
     post: doPost,
+    put: doPut,
     postForm: doPostForm,
   };
 }

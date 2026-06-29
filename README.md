@@ -78,6 +78,10 @@ All tools are prefixed `acculynx_` and return JSON.
 | `acculynx_jobs_history` | Get a job's change history |
 | `acculynx_jobs_reps` | List a job's representatives |
 | `acculynx_jobs_reps_assign` | Assign a representative to a job |
+| `acculynx_jobs_work_types` | List the company's active work types (id + name) |
+| `acculynx_jobs_trade_types` | List the company's active trade types (id + name) |
+| `acculynx_jobs_set_work_type` | Set a job's work type — by `workType` name or `workTypeId` |
+| `acculynx_jobs_set_trade_types` | Set a job's trade types — by `tradeTypes` names or `tradeTypeIds` (empty array unassigns all) |
 | `acculynx_jobs_document_folders` | List the company's document folders |
 | `acculynx_jobs_add_expense` | Record an additional expense on a job |
 | `acculynx_jobs_upload_document` | Upload a local file to a job |

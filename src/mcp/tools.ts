@@ -5,7 +5,9 @@ import {
   jobsList, jobGet, jobCreate, jobSearch,
   jobContacts, jobEstimates, jobFinancials, jobInvoices,
   jobMilestones, jobPayments, jobHistory, jobReps,
-  jobRepsAssign, documentFolders, jobAddExpense, jobUploadDocument,
+  jobRepsAssign, jobSetWorkType, jobSetTradeTypes,
+  companyWorkTypes, companyTradeTypes, resolveWorkTypeId, resolveTradeTypeIds,
+  documentFolders, jobAddExpense, jobUploadDocument,
 } from "../ops/jobs.js";
 import {
   contactsList, contactGet, contactCreate, contactsSearch,
@@ -48,6 +50,8 @@ export const num = (v: unknown): number | undefined => {
   return Number.isNaN(n) ? undefined : n;
 };
 export const boolOf = (v: unknown): boolean | undefined => (typeof v === "boolean" ? v : undefined);
+export const strArray = (v: unknown): string[] =>
+  Array.isArray(v) ? v.filter((x): x is string => typeof x === "string") : [];
 
 // resolve the CLI-equivalent { all, limit } semantics into a single limit value
 export const resolveLimit = (args: Record<string, unknown>): number | undefined =>
@@ -92,6 +96,21 @@ export function buildTools(): McpTool[] {
       userId: { type: "string", description: "User id to assign." },
       type: { type: "string", enum: ["company", "sales-owner", "ar-owner"], description: "Rep type (default company)." },
     }, required: ["jobId", "userId"] } },
+
+    { name: "acculynx_jobs_work_types", description: "List the company's active work types (id + name). Useful for resolving a work type name to its id.", inputSchema: { type: "object", properties: {}, required: [] } },
+    { name: "acculynx_jobs_trade_types", description: "List the company's active trade types (id + name). Useful for resolving a trade type name to its id.", inputSchema: { type: "object", properties: {}, required: [] } },
+
+    { name: "acculynx_jobs_set_work_type", description: "Set a job's work type, replacing the current one. Provide exactly one of workType (a name, resolved against the company's work types) or workTypeId.", inputSchema: { type: "object", properties: {
+      jobId: { type: "string", description: "Job id." },
+      workType: { type: "string", description: "Work type name (e.g. 'Insurance'). Resolved against the company's work types; case-insensitive, unique-substring match." },
+      workTypeId: { type: "integer", description: "Work type id (integer), if already known." },
+    }, required: ["jobId"] } },
+
+    { name: "acculynx_jobs_set_trade_types", description: "Set a job's trade types, replacing any existing ones. Provide exactly one of tradeTypes (names, resolved against the company's trade types) or tradeTypeIds (uuids). An empty array unassigns all trade types.", inputSchema: { type: "object", properties: {
+      jobId: { type: "string", description: "Job id." },
+      tradeTypes: { type: "array", items: { type: "string" }, description: "Trade type names (e.g. ['Windows','Roofing']). Each is resolved against the company's trade types. An empty array unassigns all." },
+      tradeTypeIds: { type: "array", items: { type: "string" }, description: "Trade type ids (uuids), if already known. An empty array unassigns all." },
+    }, required: ["jobId"] } },
 
     { name: "acculynx_jobs_document_folders", description: "List the company's document folders.", inputSchema: { type: "object", properties: {
       pageSize: { type: "number", description: "Items per page." },
@@ -177,6 +196,31 @@ export async function handleToolCall(
         return ok(await jobReps(client, str(args.jobId) ?? ""));
       case "acculynx_jobs_reps_assign":
         return ok(await jobRepsAssign(client, str(args.jobId) ?? "", { userId: str(args.userId) ?? "", type: str(args.type) }));
+      case "acculynx_jobs_work_types":
+        return ok(await companyWorkTypes(client));
+      case "acculynx_jobs_trade_types":
+        return ok(await companyTradeTypes(client));
+      case "acculynx_jobs_set_work_type": {
+        const nameGiven = args.workType !== undefined;
+        const idGiven = args.workTypeId !== undefined;
+        if (nameGiven && idGiven) throw new Error("Provide either workType or workTypeId, not both");
+        if (!nameGiven && !idGiven) throw new Error("Provide workType (name) or workTypeId");
+        const workTypeId = nameGiven
+          ? await resolveWorkTypeId(client, str(args.workType) ?? "")
+          : num(args.workTypeId) ?? 0;
+        return ok(await jobSetWorkType(client, str(args.jobId) ?? "", workTypeId));
+      }
+      case "acculynx_jobs_set_trade_types": {
+        const namesGiven = args.tradeTypes !== undefined;
+        const idsGiven = args.tradeTypeIds !== undefined;
+        if (namesGiven && idsGiven) throw new Error("Provide either tradeTypes or tradeTypeIds, not both");
+        if (!namesGiven && !idsGiven) throw new Error("Provide tradeTypes (names) or tradeTypeIds (an empty array unassigns all)");
+        const names = strArray(args.tradeTypes);
+        const ids = namesGiven
+          ? names.length > 0 ? await resolveTradeTypeIds(client, names) : []
+          : strArray(args.tradeTypeIds);
+        return ok(await jobSetTradeTypes(client, str(args.jobId) ?? "", ids));
+      }
       case "acculynx_jobs_document_folders":
         return ok(await documentFolders(client, {
           pageSize: args.pageSize !== undefined ? String(num(args.pageSize)) : undefined,

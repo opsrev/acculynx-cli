@@ -15,10 +15,21 @@ import {
   jobHistory,
   jobReps,
   jobRepsAssign,
+  jobSetWorkType,
+  jobSetTradeTypes,
+  companyWorkTypes,
+  companyTradeTypes,
+  resolveWorkTypeId,
+  resolveTradeTypeIds,
   documentFolders,
   jobAddExpense,
   jobUploadDocument,
 } from "../ops/jobs.js";
+
+// Commander option collector: accumulate repeated flags into an array.
+function collect(value: string, previous: string[]): string[] {
+  return [...previous, value];
+}
 
 export function registerJobsCommands(
   parentCmd: Command,
@@ -115,6 +126,79 @@ export function registerJobsCommands(
     .option("--type <type>", "Rep type: company, sales-owner, ar-owner", "company")
     .action(async (jobId: string, opts) => {
       const result = await jobRepsAssign(getClient(), jobId, { userId: opts.userId, type: opts.type });
+      console.log(JSON.stringify(result));
+    });
+
+  jobs
+    .command("work-types")
+    .description("List the company's active work types (id + name)")
+    .action(async () => {
+      console.log(JSON.stringify(await companyWorkTypes(getClient())));
+    });
+
+  jobs
+    .command("trade-types")
+    .description("List the company's active trade types (id + name)")
+    .action(async () => {
+      console.log(JSON.stringify(await companyTradeTypes(getClient())));
+    });
+
+  jobs
+    .command("set-work-type")
+    .argument("<jobId>", "Job ID")
+    .description("Set the work type for a job (by name or id)")
+    .option("--work-type <name>", "Work type name (resolved against the company's work types)")
+    .option("--work-type-id <id>", "Work type ID (integer)")
+    .action(async (jobId: string, opts) => {
+      const nameGiven = opts.workType !== undefined;
+      const idGiven = opts.workTypeId !== undefined;
+      if (nameGiven && idGiven) {
+        throw new Error("Use either --work-type or --work-type-id, not both");
+      }
+      if (!nameGiven && !idGiven) {
+        throw new Error("Provide --work-type <name> or --work-type-id <id>");
+      }
+      const client = getClient();
+      let workTypeId: number;
+      if (idGiven) {
+        workTypeId = Number(opts.workTypeId);
+        if (!Number.isInteger(workTypeId)) {
+          throw new Error("--work-type-id must be an integer");
+        }
+      } else {
+        workTypeId = await resolveWorkTypeId(client, opts.workType);
+      }
+      const result = await jobSetWorkType(client, jobId, workTypeId);
+      console.log(JSON.stringify(result));
+    });
+
+  jobs
+    .command("set-trade-types")
+    .argument("<jobId>", "Job ID")
+    .description(
+      "Set trade types for a job (by name or id), replacing existing ones. Use --clear to unassign all."
+    )
+    .option("--trade-type <name>", "Trade type name, resolved against the company's trade types (repeatable)", collect, [])
+    .option("--trade-type-id <uuid>", "Trade type ID (repeatable)", collect, [])
+    .option("--clear", "Unassign all trade types")
+    .action(async (jobId: string, opts) => {
+      const names = opts.tradeType as string[];
+      const ids = opts.tradeTypeId as string[];
+      const sources = [names.length > 0, ids.length > 0, Boolean(opts.clear)].filter(Boolean).length;
+      if (opts.clear && (names.length > 0 || ids.length > 0)) {
+        throw new Error("Cannot combine --clear with --trade-type or --trade-type-id");
+      }
+      if (names.length > 0 && ids.length > 0) {
+        throw new Error("Use either --trade-type or --trade-type-id, not both");
+      }
+      if (sources === 0) {
+        throw new Error(
+          "Provide --trade-type <name>, --trade-type-id <uuid>, or --clear to unassign all trade types"
+        );
+      }
+      const client = getClient();
+      const resolved = names.length > 0 ? await resolveTradeTypeIds(client, names) : ids;
+      const result = await jobSetTradeTypes(client, jobId, resolved);
       console.log(JSON.stringify(result));
     });
 
