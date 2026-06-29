@@ -17,6 +17,7 @@ function setup() {
   const mockClient: ApiClient = {
     get: vi.fn().mockResolvedValue({ count: 0, pageSize: 25, pageStartIndex: 0, items: [] }),
     post: vi.fn().mockResolvedValue({ id: 1 }),
+    put: vi.fn().mockResolvedValue({ status: 204 }),
     postForm: vi.fn().mockResolvedValue({ id: "doc-1" }),
   };
   const logSpy = vi.spyOn(console, "log").mockImplementation(() => {});
@@ -209,6 +210,162 @@ describe("jobs commands", () => {
         "--folder-id", "folder-abc",
       ])
     ).rejects.toThrow("File type .exe is not allowed");
+  });
+
+  it("jobs set-work-type puts { id } as an integer to /jobs/{jobId}/work-type", async () => {
+    const { mockClient, program } = setup();
+
+    await program.parseAsync([
+      "node", "test", "jobs", "set-work-type", "job-123",
+      "--work-type-id", "1",
+    ]);
+
+    expect(mockClient.put).toHaveBeenCalledWith("/jobs/job-123/work-type", { id: 1 });
+  });
+
+  it("jobs set-work-type rejects a non-integer work type id", async () => {
+    const { program } = setup();
+
+    await expect(
+      program.parseAsync([
+        "node", "test", "jobs", "set-work-type", "job-123",
+        "--work-type-id", "abc",
+      ])
+    ).rejects.toThrow("--work-type-id must be an integer");
+  });
+
+  it("jobs set-trade-types collects repeated --trade-type-id into an items array", async () => {
+    const { mockClient, program } = setup();
+
+    await program.parseAsync([
+      "node", "test", "jobs", "set-trade-types", "job-123",
+      "--trade-type-id", "tt-1",
+      "--trade-type-id", "tt-2",
+    ]);
+
+    expect(mockClient.put).toHaveBeenCalledWith("/jobs/job-123/trade-types", {
+      items: [{ id: "tt-1" }, { id: "tt-2" }],
+    });
+  });
+
+  it("jobs set-trade-types --clear unassigns all trade types", async () => {
+    const { mockClient, program } = setup();
+
+    await program.parseAsync([
+      "node", "test", "jobs", "set-trade-types", "job-123", "--clear",
+    ]);
+
+    expect(mockClient.put).toHaveBeenCalledWith("/jobs/job-123/trade-types", { items: [] });
+  });
+
+  it("jobs set-trade-types requires ids or --clear", async () => {
+    const { mockClient, program } = setup();
+
+    await expect(
+      program.parseAsync(["node", "test", "jobs", "set-trade-types", "job-123"])
+    ).rejects.toThrow("--trade-type-id");
+    expect(mockClient.put).not.toHaveBeenCalled();
+  });
+
+  it("jobs set-trade-types rejects combining ids with --clear", async () => {
+    const { mockClient, program } = setup();
+
+    await expect(
+      program.parseAsync([
+        "node", "test", "jobs", "set-trade-types", "job-123",
+        "--trade-type-id", "tt-1", "--clear",
+      ])
+    ).rejects.toThrow("Cannot combine --clear");
+    expect(mockClient.put).not.toHaveBeenCalled();
+  });
+
+  it("jobs work-types lists the company work types", async () => {
+    const { mockClient, program } = setup();
+    mockClient.get = vi.fn().mockResolvedValue({
+      count: 1, pageSize: 25, pageStartIndex: 0, items: [{ id: 1, name: "Retail" }],
+    });
+
+    await program.parseAsync(["node", "test", "jobs", "work-types"]);
+
+    expect(mockClient.get).toHaveBeenCalledWith(
+      "/company-settings/job-file-settings/work-types",
+      expect.anything()
+    );
+  });
+
+  it("jobs trade-types lists the company trade types", async () => {
+    const { mockClient, program } = setup();
+    mockClient.get = vi.fn().mockResolvedValue({
+      count: 1, pageSize: 25, pageStartIndex: 0, items: [{ tradeId: "uuid-win", name: "Windows" }],
+    });
+
+    await program.parseAsync(["node", "test", "jobs", "trade-types"]);
+
+    expect(mockClient.get).toHaveBeenCalledWith(
+      "/company-settings/job-file-settings/trade-types",
+      expect.anything()
+    );
+  });
+
+  it("jobs set-work-type resolves a --work-type name to its id", async () => {
+    const { mockClient, program } = setup();
+    mockClient.get = vi.fn().mockResolvedValue({
+      count: 2, pageSize: 25, pageStartIndex: 0,
+      items: [{ id: 1, name: "Retail" }, { id: 2, name: "Insurance" }],
+    });
+
+    await program.parseAsync([
+      "node", "test", "jobs", "set-work-type", "job-123", "--work-type", "insurance",
+    ]);
+
+    expect(mockClient.put).toHaveBeenCalledWith("/jobs/job-123/work-type", { id: 2 });
+  });
+
+  it("jobs set-work-type rejects providing both --work-type and --work-type-id", async () => {
+    const { program } = setup();
+
+    await expect(
+      program.parseAsync([
+        "node", "test", "jobs", "set-work-type", "job-123",
+        "--work-type", "insurance", "--work-type-id", "2",
+      ])
+    ).rejects.toThrow(/not both/);
+  });
+
+  it("jobs set-work-type requires a work type source", async () => {
+    const { program } = setup();
+
+    await expect(
+      program.parseAsync(["node", "test", "jobs", "set-work-type", "job-123"])
+    ).rejects.toThrow(/Provide --work-type/);
+  });
+
+  it("jobs set-trade-types resolves --trade-type names to ids", async () => {
+    const { mockClient, program } = setup();
+    mockClient.get = vi.fn().mockResolvedValue({
+      count: 2, pageSize: 25, pageStartIndex: 0,
+      items: [{ tradeId: "uuid-win", name: "Windows" }, { tradeId: "uuid-roof", name: "Roofing" }],
+    });
+
+    await program.parseAsync([
+      "node", "test", "jobs", "set-trade-types", "job-123",
+      "--trade-type", "windows", "--trade-type", "roofing",
+    ]);
+
+    expect(mockClient.put).toHaveBeenCalledWith("/jobs/job-123/trade-types", {
+      items: [{ id: "uuid-win" }, { id: "uuid-roof" }],
+    });
+  });
+
+  it("jobs set-trade-types rejects mixing --trade-type and --trade-type-id", async () => {
+    const { program } = setup();
+
+    await expect(
+      program.parseAsync([
+        "node", "test", "jobs", "set-trade-types", "job-123",
+        "--trade-type", "windows", "--trade-type-id", "tt-1",
+      ])
+    ).rejects.toThrow(/not both/);
   });
 
   it("jobs reps calls GET /jobs/{jobId}/representatives", async () => {

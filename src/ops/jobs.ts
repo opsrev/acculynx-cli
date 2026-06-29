@@ -70,6 +70,94 @@ export function jobRepsAssign(
   return client.post(`/jobs/${jobId}/representatives/${type}`, { id: opts.userId });
 }
 
+export function jobSetWorkType(
+  client: ApiClient,
+  jobId: string,
+  workTypeId: number
+): Promise<unknown> {
+  return client.put(`/jobs/${jobId}/work-type`, { id: workTypeId });
+}
+
+export function jobSetTradeTypes(
+  client: ApiClient,
+  jobId: string,
+  tradeTypeIds: string[]
+): Promise<unknown> {
+  return client.put(`/jobs/${jobId}/trade-types`, {
+    items: tradeTypeIds.map((id) => ({ id })),
+  });
+}
+
+// ---- company work / trade types ----
+
+interface NamedItem {
+  name?: string;
+  [key: string]: unknown;
+}
+
+export function companyWorkTypes(client: ApiClient): Promise<unknown[]> {
+  return paginate(client, "/company-settings/job-file-settings/work-types", {}, Infinity);
+}
+
+export function companyTradeTypes(client: ApiClient): Promise<unknown[]> {
+  return paginate(client, "/company-settings/job-file-settings/trade-types", {}, Infinity);
+}
+
+// Resolve a rough user-supplied string against a company's type list:
+//   1. exact (case-insensitive) name match
+//   2. unique substring name match
+//   3. id passthrough (the value already is a known id)
+// On no match or an ambiguous match, throw an error that lists the valid
+// options so the caller (or an agent) can correct itself on the next attempt.
+function resolveNamed(
+  items: NamedItem[],
+  value: string,
+  opts: { label: string; idKey: string; idIsNumeric: boolean }
+): string | number {
+  const v = value.trim();
+  const idOf = (item: NamedItem): string | number => item[opts.idKey] as string | number;
+  const nameOf = (item: NamedItem): string => String(item.name ?? "");
+
+  // id passthrough
+  if (opts.idIsNumeric) {
+    if (/^\d+$/.test(v)) {
+      const hit = items.find((item) => Number(idOf(item)) === Number(v));
+      if (hit) return idOf(hit);
+    }
+  } else {
+    const hit = items.find((item) => String(idOf(item)) === v);
+    if (hit) return idOf(hit);
+  }
+
+  const lower = v.toLowerCase();
+  const exact = items.filter((item) => nameOf(item).toLowerCase() === lower);
+  if (exact.length === 1) return idOf(exact[0]);
+
+  const partial = items.filter((item) => nameOf(item).toLowerCase().includes(lower));
+  if (partial.length === 1) return idOf(partial[0]);
+  if (partial.length > 1) {
+    throw new Error(
+      `"${value}" matches multiple ${opts.label}s: ${partial.map(nameOf).join(", ")}. Be more specific.`
+    );
+  }
+
+  throw new Error(
+    `No ${opts.label} matches "${value}". Available ${opts.label}s: ${items.map(nameOf).join(", ")}`
+  );
+}
+
+export async function resolveWorkTypeId(client: ApiClient, value: string): Promise<number> {
+  const items = (await companyWorkTypes(client)) as NamedItem[];
+  return resolveNamed(items, value, { label: "work type", idKey: "id", idIsNumeric: true }) as number;
+}
+
+export async function resolveTradeTypeIds(client: ApiClient, values: string[]): Promise<string[]> {
+  const items = (await companyTradeTypes(client)) as NamedItem[];
+  return values.map(
+    (value) => resolveNamed(items, value, { label: "trade type", idKey: "tradeId", idIsNumeric: false }) as string
+  );
+}
+
 export interface DocumentFoldersOpts {
   pageSize?: string;
   recordStartIndex?: string;
