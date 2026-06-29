@@ -68,22 +68,22 @@ describe("jobs + ping dispatch", () => {
     expect(calls[0]).toMatchObject({ m: "post", path: "/jobs/j-1/representatives/company", arg: { id: "u-1" } });
   });
 
-  it("acculynx_jobs_set_work_type puts a numeric { id }", async () => {
+  it("acculynx_jobs_set_work_type puts { workTypeId }", async () => {
     const { client, calls } = fakeClient();
     await handleToolCall({ name: "acculynx_jobs_set_work_type", args: { jobId: "j-1", workTypeId: 1 } }, () => client);
-    expect(calls[0]).toMatchObject({ m: "put", path: "/jobs/j-1/work-type", arg: { id: 1 } });
+    expect(calls[0]).toMatchObject({ m: "put", path: "/jobs/j-1/work-type", arg: { workTypeId: 1 } });
   });
 
-  it("acculynx_jobs_set_trade_types wraps ids into an items collection", async () => {
+  it("acculynx_jobs_set_trade_types puts a flat tradeTypeIds array", async () => {
     const { client, calls } = fakeClient();
     await handleToolCall({ name: "acculynx_jobs_set_trade_types", args: { jobId: "j-1", tradeTypeIds: ["tt-1", "tt-2"] } }, () => client);
-    expect(calls[0]).toMatchObject({ m: "put", path: "/jobs/j-1/trade-types", arg: { items: [{ id: "tt-1" }, { id: "tt-2" }] } });
+    expect(calls[0]).toMatchObject({ m: "put", path: "/jobs/j-1/trade-types", arg: { tradeTypeIds: ["tt-1", "tt-2"] } });
   });
 
-  it("acculynx_jobs_set_trade_types sends an empty items array to unassign all", async () => {
+  it("acculynx_jobs_set_trade_types sends an empty tradeTypeIds array to unassign all", async () => {
     const { client, calls } = fakeClient();
     await handleToolCall({ name: "acculynx_jobs_set_trade_types", args: { jobId: "j-1", tradeTypeIds: [] } }, () => client);
-    expect(calls[0]).toMatchObject({ m: "put", path: "/jobs/j-1/trade-types", arg: { items: [] } });
+    expect(calls[0]).toMatchObject({ m: "put", path: "/jobs/j-1/trade-types", arg: { tradeTypeIds: [] } });
   });
 
   it("acculynx_jobs_work_types dispatches to GET the work-types endpoint", async () => {
@@ -105,17 +105,17 @@ describe("jobs + ping dispatch", () => {
       return { count: 2, pageSize: 25, pageStartIndex: 0, items: [{ id: 1, name: "Retail" }, { id: 2, name: "Insurance" }] };
     });
     await handleToolCall({ name: "acculynx_jobs_set_work_type", args: { jobId: "j-1", workType: "insurance" } }, () => client);
-    expect(calls.find((c) => c.m === "put")).toMatchObject({ m: "put", path: "/jobs/j-1/work-type", arg: { id: 2 } });
+    expect(calls.find((c) => c.m === "put")).toMatchObject({ m: "put", path: "/jobs/j-1/work-type", arg: { workTypeId: 2 } });
   });
 
   it("acculynx_jobs_set_trade_types resolves tradeTypes names to ids", async () => {
     const { client, calls } = fakeClient();
     client.get = vi.fn(async (path: string) => {
       calls.push({ m: "get", path });
-      return { count: 2, pageSize: 25, pageStartIndex: 0, items: [{ tradeId: "uuid-win", name: "Windows" }, { tradeId: "uuid-roof", name: "Roofing" }] };
+      return { count: 2, pageSize: 25, pageStartIndex: 0, items: [{ id: "uuid-win", name: "Windows" }, { id: "uuid-roof", name: "Roofing" }] };
     });
     await handleToolCall({ name: "acculynx_jobs_set_trade_types", args: { jobId: "j-1", tradeTypes: ["windows", "roofing"] } }, () => client);
-    expect(calls.find((c) => c.m === "put")).toMatchObject({ m: "put", path: "/jobs/j-1/trade-types", arg: { items: [{ id: "uuid-win" }, { id: "uuid-roof" }] } });
+    expect(calls.find((c) => c.m === "put")).toMatchObject({ m: "put", path: "/jobs/j-1/trade-types", arg: { tradeTypeIds: ["uuid-win", "uuid-roof"] } });
   });
 
   it("acculynx_jobs_set_work_type errors when neither workType nor workTypeId is given", async () => {
