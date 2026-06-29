@@ -212,7 +212,7 @@ describe("jobs commands", () => {
     ).rejects.toThrow("File type .exe is not allowed");
   });
 
-  it("jobs set-work-type puts { id } as an integer to /jobs/{jobId}/work-type", async () => {
+  it("jobs set-work-type puts { workTypeId } as an integer to /jobs/{jobId}/work-type", async () => {
     const { mockClient, program } = setup();
 
     await program.parseAsync([
@@ -220,7 +220,7 @@ describe("jobs commands", () => {
       "--work-type-id", "1",
     ]);
 
-    expect(mockClient.put).toHaveBeenCalledWith("/jobs/job-123/work-type", { id: 1 });
+    expect(mockClient.put).toHaveBeenCalledWith("/jobs/job-123/work-type", { workTypeId: 1 });
   });
 
   it("jobs set-work-type rejects a non-integer work type id", async () => {
@@ -244,7 +244,7 @@ describe("jobs commands", () => {
     ]);
 
     expect(mockClient.put).toHaveBeenCalledWith("/jobs/job-123/trade-types", {
-      items: [{ id: "tt-1" }, { id: "tt-2" }],
+      tradeTypeIds: ["tt-1", "tt-2"],
     });
   });
 
@@ -255,7 +255,7 @@ describe("jobs commands", () => {
       "node", "test", "jobs", "set-trade-types", "job-123", "--clear",
     ]);
 
-    expect(mockClient.put).toHaveBeenCalledWith("/jobs/job-123/trade-types", { items: [] });
+    expect(mockClient.put).toHaveBeenCalledWith("/jobs/job-123/trade-types", { tradeTypeIds: [] });
   });
 
   it("jobs set-trade-types requires ids or --clear", async () => {
@@ -296,7 +296,7 @@ describe("jobs commands", () => {
   it("jobs trade-types lists the company trade types", async () => {
     const { mockClient, program } = setup();
     mockClient.get = vi.fn().mockResolvedValue({
-      count: 1, pageSize: 25, pageStartIndex: 0, items: [{ tradeId: "uuid-win", name: "Windows" }],
+      count: 1, pageSize: 25, pageStartIndex: 0, items: [{ id: "uuid-win", name: "Windows" }],
     });
 
     await program.parseAsync(["node", "test", "jobs", "trade-types"]);
@@ -318,7 +318,7 @@ describe("jobs commands", () => {
       "node", "test", "jobs", "set-work-type", "job-123", "--work-type", "insurance",
     ]);
 
-    expect(mockClient.put).toHaveBeenCalledWith("/jobs/job-123/work-type", { id: 2 });
+    expect(mockClient.put).toHaveBeenCalledWith("/jobs/job-123/work-type", { workTypeId: 2 });
   });
 
   it("jobs set-work-type rejects providing both --work-type and --work-type-id", async () => {
@@ -344,7 +344,7 @@ describe("jobs commands", () => {
     const { mockClient, program } = setup();
     mockClient.get = vi.fn().mockResolvedValue({
       count: 2, pageSize: 25, pageStartIndex: 0,
-      items: [{ tradeId: "uuid-win", name: "Windows" }, { tradeId: "uuid-roof", name: "Roofing" }],
+      items: [{ id: "uuid-win", name: "Windows" }, { id: "uuid-roof", name: "Roofing" }],
     });
 
     await program.parseAsync([
@@ -353,7 +353,7 @@ describe("jobs commands", () => {
     ]);
 
     expect(mockClient.put).toHaveBeenCalledWith("/jobs/job-123/trade-types", {
-      items: [{ id: "uuid-win" }, { id: "uuid-roof" }],
+      tradeTypeIds: ["uuid-win", "uuid-roof"],
     });
   });
 

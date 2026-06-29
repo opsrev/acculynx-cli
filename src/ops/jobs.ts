@@ -70,12 +70,15 @@ export function jobRepsAssign(
   return client.post(`/jobs/${jobId}/representatives/${type}`, { id: opts.userId });
 }
 
+// Body shapes verified against the live API (the pasted OpenAPI docs were wrong):
+//   work-type   -> { workTypeId }            (doc said { id })
+//   trade-types -> { tradeTypeIds: [...] }   (doc said { items: [{ id }] })
 export function jobSetWorkType(
   client: ApiClient,
   jobId: string,
   workTypeId: number
 ): Promise<unknown> {
-  return client.put(`/jobs/${jobId}/work-type`, { id: workTypeId });
+  return client.put(`/jobs/${jobId}/work-type`, { workTypeId });
 }
 
 export function jobSetTradeTypes(
@@ -83,9 +86,7 @@ export function jobSetTradeTypes(
   jobId: string,
   tradeTypeIds: string[]
 ): Promise<unknown> {
-  return client.put(`/jobs/${jobId}/trade-types`, {
-    items: tradeTypeIds.map((id) => ({ id })),
-  });
+  return client.put(`/jobs/${jobId}/trade-types`, { tradeTypeIds });
 }
 
 // ---- company work / trade types ----
@@ -153,8 +154,9 @@ export async function resolveWorkTypeId(client: ApiClient, value: string): Promi
 
 export async function resolveTradeTypeIds(client: ApiClient, values: string[]): Promise<string[]> {
   const items = (await companyTradeTypes(client)) as NamedItem[];
+  // The live API keys trade types by `id` (the OpenAPI doc's `tradeId` is wrong).
   return values.map(
-    (value) => resolveNamed(items, value, { label: "trade type", idKey: "tradeId", idIsNumeric: false }) as string
+    (value) => resolveNamed(items, value, { label: "trade type", idKey: "id", idIsNumeric: false }) as string
   );
 }
 
