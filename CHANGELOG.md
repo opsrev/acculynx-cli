@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.13.0](https://github.com/opsrev/acculynx-cli/compare/v1.12.0...v1.13.0) (2026-06-29)
+
+
+### Features
+
+* reposition as AccuLynx MCP server and add acculynx-mcp wrapper ([#44](https://github.com/opsrev/acculynx-cli/issues/44)) ([22a728b](https://github.com/opsrev/acculynx-cli/commit/22a728b49a246a639d3b960f99e4c1b4a3770ffc))
+* set and look up job work types and trade types ([#46](https://github.com/opsrev/acculynx-cli/issues/46)) ([fb1c87a](https://github.com/opsrev/acculynx-cli/commit/fb1c87a3a882adcab1ce8999782ccd40ec0429a0))
+
 ## [1.12.0](https://github.com/opsrev/acculynx-cli/compare/v1.11.0...v1.12.0) (2026-06-23)
 
 
