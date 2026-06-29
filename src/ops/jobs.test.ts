@@ -18,10 +18,12 @@ const WORK_TYPES = [
   { id: 2, name: "Insurance", systemDefault: true },
   { id: 3, name: "Insurance Supplement", systemDefault: false },
 ];
+// The live API returns trade types keyed by `id` (the pasted OpenAPI doc's
+// `tradeId` was wrong), so the fixtures mirror reality.
 const TRADE_TYPES = [
-  { tradeId: "uuid-win", name: "Windows" },
-  { tradeId: "uuid-roof", name: "Roofing" },
-  { tradeId: "uuid-sid", name: "Siding" },
+  { id: "uuid-win", name: "Windows" },
+  { id: "uuid-roof", name: "Roofing" },
+  { id: "uuid-sid", name: "Siding" },
 ];
 
 // A client whose paginated GET serves a fixed item list (single page).
@@ -80,24 +82,24 @@ describe("jobs ops", () => {
     expect(client.post).toHaveBeenCalledWith("/jobs/job-123/representatives/sales-owner", { id: "u-1" });
   });
 
-  it("jobSetWorkType puts { id } to /jobs/{jobId}/work-type", async () => {
+  it("jobSetWorkType puts { workTypeId } to /jobs/{jobId}/work-type", async () => {
     const client = mockClient();
     await jobSetWorkType(client, "job-123", 1);
-    expect(client.put).toHaveBeenCalledWith("/jobs/job-123/work-type", { id: 1 });
+    expect(client.put).toHaveBeenCalledWith("/jobs/job-123/work-type", { workTypeId: 1 });
   });
 
-  it("jobSetTradeTypes wraps ids into an items collection", async () => {
+  it("jobSetTradeTypes puts a flat tradeTypeIds array", async () => {
     const client = mockClient();
     await jobSetTradeTypes(client, "job-123", ["tt-1", "tt-2"]);
     expect(client.put).toHaveBeenCalledWith("/jobs/job-123/trade-types", {
-      items: [{ id: "tt-1" }, { id: "tt-2" }],
+      tradeTypeIds: ["tt-1", "tt-2"],
     });
   });
 
-  it("jobSetTradeTypes sends an empty items array to unassign all", async () => {
+  it("jobSetTradeTypes sends an empty tradeTypeIds array to unassign all", async () => {
     const client = mockClient();
     await jobSetTradeTypes(client, "job-123", []);
-    expect(client.put).toHaveBeenCalledWith("/jobs/job-123/trade-types", { items: [] });
+    expect(client.put).toHaveBeenCalledWith("/jobs/job-123/trade-types", { tradeTypeIds: [] });
   });
 
   it("companyWorkTypes fetches all items from the work-types endpoint", async () => {
