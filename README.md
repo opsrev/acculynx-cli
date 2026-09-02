@@ -121,6 +121,7 @@ acculynx ping                              # verify API key
 acculynx jobs list --limit 5               # 25 results by default; --all to fetch everything
 acculynx jobs get <jobId>
 acculynx jobs search --query "smith"
+acculynx jobs scan --milestones Approved   # scan all jobs → digest + coverage receipt
 acculynx contacts list --limit 10
 acculynx estimates get <estimateId>
 ```
