@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from "vitest";
-import { scanJobs } from "./scan.js";
+import { scanJobs, enrichJobs } from "./scan.js";
 import type { ApiClient } from "../api-client.js";
 
 const job = (id: string, extra: Record<string, unknown> = {}) => ({
@@ -52,5 +52,59 @@ describe("scanJobs", () => {
     const result = await scanJobs(clientFromPages([page(items, 2)]), { tradeType: ["gutters"] });
     expect(result.jobs.map((j) => j.id)).toEqual(["a1"]);
     expect(result.complete).toBe(true); // completeness judged pre-filter
+  });
+});
+
+describe("enrichJobs", () => {
+  const jobs = [ { id: "j1" }, { id: "j2" } ] as Record<string, unknown>[];
+
+  function enrichClient(overrides: Record<string, (path: string) => unknown> = {}): ApiClient {
+    const get = vi.fn(async (path: string) => {
+      for (const [needle, fn] of Object.entries(overrides)) if (path.includes(needle)) return fn(path);
+      if (path.includes("/financials")) return { approvedJobValue: 100, balanceDue: 40, worksheetSectionTotals: { worksheetTotal: 90 } };
+      if (path.includes("/representatives")) return { items: [{ type: "SalesOwner", user: { id: "u1" } }] };
+      if (path.includes("/milestone-history")) return { items: [{ name: "Approved", date: "2026-07-14T00:00:00Z" }] };
+      if (path === "/users") return { count: 1, pageSize: 25, pageStartIndex: 0, items: [{ id: "u1", displayName: "Frank Leo" }] };
+      throw new Error(`unexpected ${path}`);
+    });
+    return { get, post: vi.fn(), put: vi.fn(), postForm: vi.fn() } as unknown as ApiClient;
+  }
+
+  it("attaches financials, named reps, and dates", async () => {
+    const out = await enrichJobs(enrichClient(), jobs, ["financials", "reps", "dates"]);
+    expect(out[0].financials).toEqual({ approvedJobValue: 100, balanceDue: 40, worksheetTotal: 90 });
+    expect(out[0].reps).toEqual({ salesOwner: "Frank Leo" });
+    expect(out[0].dates).toEqual([{ name: "Approved", date: "2026-07-14T00:00:00Z" }]);
+    expect(out[0].errors).toEqual([]);
+  });
+
+  it("fetches /users exactly once for the whole scan", async () => {
+    const client = enrichClient();
+    await enrichJobs(client, jobs, ["reps"]);
+    const userCalls = (client.get as ReturnType<typeof vi.fn>).mock.calls.filter(([p]) => p === "/users");
+    expect(userCalls).toHaveLength(1);
+  });
+
+  it("captures a per-job failure without dropping the job or the run", async () => {
+    const client = enrichClient({ "j2/financials": () => { throw new Error("boom"); } });
+    const out = await enrichJobs(client, jobs, ["financials"]);
+    expect(out[1].financials).toBeUndefined();
+    expect(out[1].errors).toEqual([{ jobId: "j2", source: "financials", message: "boom" }]);
+    expect(out[0].errors).toEqual([]);
+  });
+
+  it("respects the concurrency bound", async () => {
+    let inFlight = 0, peak = 0;
+    const slow = vi.fn(async (path: string) => {
+      if (!path.includes("/financials")) return { items: [] };
+      inFlight++; peak = Math.max(peak, inFlight);
+      await new Promise((r) => setTimeout(r, 5));
+      inFlight--;
+      return { worksheetSectionTotals: {} };
+    });
+    const client = { get: slow, post: vi.fn(), put: vi.fn(), postForm: vi.fn() } as unknown as ApiClient;
+    const many = Array.from({ length: 20 }, (_, i) => ({ id: `j${i}` }));
+    await enrichJobs(client, many, ["financials"], 3);
+    expect(peak).toBeLessThanOrEqual(3);
   });
 });
