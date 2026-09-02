@@ -138,3 +138,49 @@ describe("enrichJobs", () => {
     expect(peak).toBeLessThanOrEqual(3);
   });
 });
+
+// --- messages enricher (issue #51) ------------------------------------------
+
+import type { MessagesTool } from "./scan.js";
+
+describe("enrichJobs: messages", () => {
+  const twoJobs = [{ id: "j1" }, { id: "j2" }] as Record<string, unknown>[];
+  const plainClient = { get: vi.fn(), post: vi.fn(), put: vi.fn(), postForm: vi.fn() } as unknown as ApiClient;
+  const toolResult = (payload: unknown) => ({ content: [{ type: "text", text: JSON.stringify(payload) }] });
+
+  it("keeps the newest three messages, mapped and truncated", async () => {
+    const tool = vi.fn(async () => toolResult({ messages: [
+      { createdDate: "2026-09-02T10:00:00Z", createdBy: "Frank Leo", message: "  line one\n\nline   two  " + "x".repeat(300) },
+      { createdDate: "2026-09-01T10:00:00Z", createdBy: "Sherly", message: "second" },
+      { createdDate: "2026-08-30T10:00:00Z", createdBy: "A", message: "third" },
+      { createdDate: "2026-08-29T10:00:00Z", createdBy: "B", message: "fourth" },
+    ] })) as unknown as MessagesTool;
+    const loader = vi.fn(async () => tool);
+    const out = await enrichJobs(plainClient, twoJobs, ["messages"], 5, { loadMessagesTool: loader });
+    expect(loader).toHaveBeenCalledTimes(1);
+    expect(out[0].messages).toHaveLength(3);
+    expect(out[0].messages![0].by).toBe("Frank Leo");
+    expect(out[0].messages![0].text.startsWith("line one line two")).toBe(true);
+    expect(out[0].messages![0].text.length).toBeLessThanOrEqual(200);
+    expect(out[0].errors).toEqual([]);
+  });
+
+  it("a tool error becomes a per-job ScanError", async () => {
+    const tool = (async (call: { args: Record<string, unknown> }) =>
+      call.args.jobId === "j2"
+        ? { isError: true, content: [{ type: "text", text: "session dead" }] }
+        : toolResult({ messages: [] })) as unknown as MessagesTool;
+    const out = await enrichJobs(plainClient, twoJobs, ["messages"], 5, { loadMessagesTool: async () => tool });
+    expect(out[0].messages).toEqual([]);
+    expect(out[0].errors).toEqual([]);
+    expect(out[1].errors).toEqual([{ jobId: "j2", source: "messages", message: "session dead" }]);
+  });
+
+  it("a failed lib load errors every job without aborting the run", async () => {
+    const loader = vi.fn(async (): Promise<MessagesTool> => { throw new Error("Cannot find module"); });
+    const out = await enrichJobs(plainClient, twoJobs, ["messages"], 5, { loadMessagesTool: loader });
+    expect(out).toHaveLength(2);
+    expect(out.every((e) => e.errors.length === 1 && e.errors[0].source === "messages")).toBe(true);
+    expect(loader).toHaveBeenCalledTimes(1);
+  });
+});

@@ -82,25 +82,53 @@ export async function scanJobs(client: ApiClient, filters: ScanFilters): Promise
   return { jobs, scanned: fetched.length, serverCount, complete, ...(pageError ? { pageError } : {}) };
 }
 
-export type Enricher = "financials" | "reps" | "dates";
-export const ENRICHERS: readonly Enricher[] = ["financials", "reps", "dates"];
+export type Enricher = "financials" | "reps" | "dates" | "messages";
+export const ENRICHERS: readonly Enricher[] = ["financials", "reps", "dates", "messages"];
 
 export interface EnrichedJob {
   job: Record<string, unknown>;
   financials?: { approvedJobValue?: number; balanceDue?: number; worksheetTotal?: number };
   reps?: { company?: string; salesOwner?: string };
   dates?: Array<{ name: string; date: string }>;
+  messages?: Array<{ date: string; by: string; text: string }>;
   errors: ScanError[];
 }
 
 const asRecord = (v: unknown): Record<string, unknown> =>
   v !== null && typeof v === "object" ? (v as Record<string, unknown>) : {};
 
+// --- messages enricher plumbing ---------------------------------------------
+// Job messages only exist on the unofficial (cookie-session) surface. The lib
+// is an optional sibling install, resolved the same way src/index.ts loads
+// extended commands; when it is missing or the session is dead, each job gets
+// a per-job "messages" ScanError and the scan itself still completes.
+
+export interface MessagesToolResult {
+  content?: Array<{ type: string; text?: string }>;
+  isError?: boolean;
+}
+export type MessagesTool = (call: {
+  name: string;
+  args: Record<string, unknown>;
+}) => Promise<MessagesToolResult>;
+export interface EnrichDeps {
+  loadMessagesTool?: () => Promise<MessagesTool>;
+}
+
+async function defaultLoadMessagesTool(): Promise<MessagesTool> {
+  const { createRequire } = await import("node:module");
+  const require = createRequire(import.meta.url);
+  const resolved = require.resolve("@opsrev/acculynx-cli-unofficial");
+  const mod = (await import(resolved)) as { handleExtendedToolCall: MessagesTool };
+  return mod.handleExtendedToolCall;
+}
+
 export async function enrichJobs(
   client: ApiClient,
   jobs: Record<string, unknown>[],
   enrich: Enricher[],
-  concurrency = 5
+  concurrency = 5,
+  deps: EnrichDeps = {}
 ): Promise<EnrichedJob[]> {
   // One /users fetch names every rep in the scan; reps responses carry only ids.
   let userNames = new Map<string, string>();
@@ -113,6 +141,12 @@ export async function enrichJobs(
     }
   }
   const nameOf = (id: unknown): string => userNames.get(String(id)) || String(id ?? "").slice(0, 8);
+
+  // Lazy, memoized: the unofficial lib loads once per scan, and a failed load
+  // stays failed (each job records the error; no retry storm).
+  let messagesToolPromise: Promise<MessagesTool> | null = null;
+  const getMessagesTool = (): Promise<MessagesTool> =>
+    (messagesToolPromise ??= (deps.loadMessagesTool ?? defaultLoadMessagesTool)());
 
   const out: EnrichedJob[] = jobs.map((job) => ({ job, errors: [] }));
   let next = 0;
@@ -143,6 +177,19 @@ export async function enrichJobs(
           entry.dates = ((m.items as Array<Record<string, unknown>> | undefined) ?? []).map((i) => ({
             name: String(i.name ?? ""), date: String(i.date ?? ""),
           }));
+        } else if (source === "messages") {
+          const tool = await getMessagesTool();
+          const res = await tool({ name: "acculynx_jobs_messages", args: { jobId } });
+          const text = String(res.content?.[0]?.text ?? "");
+          if (res.isError) throw new Error(text.slice(0, 200) || "messages tool error");
+          const data = asRecord(JSON.parse(text || "{}"));
+          entry.messages = ((data.messages as Array<Record<string, unknown>> | undefined) ?? [])
+            .slice(0, 3)
+            .map((msg) => ({
+              date: String(msg.createdDate ?? ""),
+              by: String(msg.createdBy ?? ""),
+              text: String(msg.message ?? "").replace(/\s+/g, " ").trim().slice(0, 200),
+            }));
         }
       } catch (error) {
         entry.errors.push({ jobId, source, message: error instanceof Error ? error.message : String(error) });

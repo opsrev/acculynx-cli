@@ -496,3 +496,12 @@ describe("jobs commands", () => {
     });
   });
 });
+
+  it("jobs scan accepts the messages enricher", async () => {
+    const { mockClient, logSpy, program } = setup();
+    mockClient.get = vi.fn().mockResolvedValue({ count: 0, pageSize: 25, pageStartIndex: 0, items: [] });
+    await program.parseAsync(["node", "test", "jobs", "scan", "--enrich", "messages"]);
+    const printed = (logSpy.mock.calls.at(-1) ?? [""])[0] as string;
+    expect(printed).toContain("enrich=messages");
+    expect(process.exitCode ?? 0).toBe(0);
+  });
