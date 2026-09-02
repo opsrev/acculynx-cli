@@ -1,6 +1,6 @@
 {
   "name": "@opsrev/acculynx-cli",
-  "version": "1.14.0",
+  "version": "1.15.0",
   "description": "AccuLynx MCP server & CLI — use the AccuLynx roofing CRM in Claude Desktop, Cursor, and any MCP client. Also a JSON CLI for scripts and AI agents.",
   "repository": {
     "type": "git",
