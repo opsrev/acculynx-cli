@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.15.0](https://github.com/opsrev/acculynx-cli/compare/v1.14.0...v1.15.0) (2026-09-02)
+
+
+### Features
+
+* messages enricher for jobs scan ([#51](https://github.com/opsrev/acculynx-cli/issues/51)) ([#52](https://github.com/opsrev/acculynx-cli/issues/52)) ([3ef8bff](https://github.com/opsrev/acculynx-cli/commit/3ef8bff6ee9ab847e204eacd1d3482e0fceeb2e4))
+
 ## [1.14.0](https://github.com/opsrev/acculynx-cli/compare/v1.13.1...v1.14.0) (2026-09-02)
 
 
