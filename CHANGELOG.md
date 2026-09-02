@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.14.0](https://github.com/opsrev/acculynx-cli/compare/v1.13.1...v1.14.0) (2026-09-02)
+
+
+### Features
+
+* jobs scan — enumerate + enrich + digest with a coverage receipt ([#49](https://github.com/opsrev/acculynx-cli/issues/49)) ([6629eff](https://github.com/opsrev/acculynx-cli/commit/6629effe2d9ba7633258de3f3f97c924997a06a0))
+
 ## [1.13.1](https://github.com/opsrev/acculynx-cli/compare/v1.13.0...v1.13.1) (2026-06-29)
 
 
