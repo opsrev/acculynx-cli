@@ -105,10 +105,18 @@ export function registerJobsCommands(
       };
       const result = await scanJobs(getClient(), filters);
       const enrichedJobs = await enrichJobs(getClient(), result.jobs, enrich);
-      const report = { filters, enrich, jobs: enrichedJobs, serverCount: result.serverCount, complete: result.complete, ...(result.pageError ? { pageError: result.pageError } : {}) };
-      if (opts.out) writeFileSync(opts.out, formatScanJsonl(report) + "\n");
+      const report = { filters, enrich, jobs: enrichedJobs, scanned: result.scanned, serverCount: result.serverCount, complete: result.complete, ...(result.pageError ? { pageError: result.pageError } : {}) };
+      // Print before writing: a bad --out path must never swallow a paid-for scan.
       console.log(opts.format === "jsonl" ? formatScanJsonl(report) : formatScanDigest(report));
       if (!result.complete) process.exitCode = 3;
+      if (opts.out) {
+        try {
+          writeFileSync(opts.out, formatScanJsonl(report) + "\n");
+        } catch (error) {
+          // Reported, but not as an exit code: a failed file write is not partial coverage.
+          console.error(`out: FAILED - ${error instanceof Error ? error.message : String(error)}`);
+        }
+      }
     });
 
   jobs

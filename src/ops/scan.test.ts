@@ -24,6 +24,7 @@ describe("scanJobs", () => {
     const client = clientFromPages([first, second]);
     const result = await scanJobs(client, { milestones: "Approved" });
     expect(result.jobs).toHaveLength(30);
+    expect(result.scanned).toBe(30);
     expect(result.serverCount).toBe(30);
     expect(result.complete).toBe(true);
     expect((client.get as ReturnType<typeof vi.fn>).mock.calls[0]).toEqual([
@@ -51,7 +52,36 @@ describe("scanJobs", () => {
     const items = [job("a1", { tradeTypes: [{ name: "Gutters" }] }), job("a2")];
     const result = await scanJobs(clientFromPages([page(items, 2)]), { tradeType: ["gutters"] });
     expect(result.jobs.map((j) => j.id)).toEqual(["a1"]);
+    expect(result.scanned).toBe(2); // pre-filter fetch count is the coverage number
     expect(result.complete).toBe(true); // completeness judged pre-filter
+  });
+
+  it("matches trade types against the name value only, never the JSON keys", async () => {
+    const items = [job("a1", { tradeTypes: [{ name: "Gutters" }] })];
+    const result = await scanJobs(clientFromPages([page(items, 1)]), { tradeType: ["name"] });
+    expect(result.jobs).toEqual([]);
+    expect(result.scanned).toBe(1);
+    expect(result.complete).toBe(true);
+  });
+
+  it("ignores tradeTypes that are not arrays of named objects", async () => {
+    const items = [job("a1", { tradeTypes: "Gutters" }), job("a2", { tradeTypes: [{ id: "t1" }] })];
+    const result = await scanJobs(clientFromPages([page(items, 2)]), { tradeType: ["gutters"] });
+    expect(result.jobs).toEqual([]);
+    expect(result.scanned).toBe(2);
+  });
+
+  it("treats a non-array items page as an empty page and stops", async () => {
+    const result = await scanJobs(clientFromPages([{ count: 0, items: null }]), {});
+    expect(result.jobs).toEqual([]);
+    expect(result.scanned).toBe(0);
+    expect(result.complete).toBe(true);
+  });
+
+  it("a non-array items page under a nonzero server count is honestly incomplete", async () => {
+    const result = await scanJobs(clientFromPages([{ count: 2, items: "oops" }]), {});
+    expect(result.jobs).toEqual([]);
+    expect(result.complete).toBe(false);
   });
 });
 

@@ -3,7 +3,10 @@ import type { Enricher, EnrichedJob, ScanFilters } from "./scan.js";
 export interface ScanReport {
   filters: ScanFilters;
   enrich: Enricher[];
+  /** Jobs listed in the digest — post trade filter. */
   jobs: EnrichedJob[];
+  /** Jobs fetched from the server pre trade filter — the coverage number. */
+  scanned: number;
   serverCount?: number;
   complete: boolean;
   pageError?: string;
@@ -27,8 +30,9 @@ function mmdd(iso?: string): string {
 
 /** First primary contact's "firstName lastName", else the job's jobName. */
 function customerName(job: Record<string, unknown>): string {
-  const contacts = (job.contacts as Array<Record<string, unknown>> | undefined) ?? [];
-  const primary = contacts.find((c) => c.isPrimary === true);
+  const raw = job.contacts;
+  const contacts = (Array.isArray(raw) ? raw : []) as Array<Record<string, unknown>>;
+  const primary = contacts.find((c) => c !== null && typeof c === "object" && c.isPrimary === true);
   if (primary) {
     const contact = (primary.contact as Record<string, unknown> | undefined) ?? {};
     const full = `${String(contact.firstName ?? "").trim()} ${String(contact.lastName ?? "").trim()}`.trim();
@@ -51,18 +55,24 @@ function headerLine1(report: ScanReport): string {
   return parts.length > 0 ? `${prefix} ${parts.join(" ")}` : prefix;
 }
 
+/**
+ * The trust anchor an agent quotes: coverage is the pre-filter fetch count over
+ * the server total, so a narrow trade filter can never read as a failed scan.
+ */
 function headerLine2(report: ScanReport): string {
-  const fetched = report.jobs.length;
+  const scanned = report.scanned ?? report.jobs.length;
   const totalLabel = report.serverCount !== undefined ? String(report.serverCount) : "?";
-  let line = `jobs ${fetched}/${totalLabel}`;
+  let line = `jobs ${scanned}/${totalLabel}`;
   if (report.serverCount !== undefined) line += ` (server count ${report.serverCount})`;
+  const tradeFiltered = (report.filters.tradeType ?? []).length > 0;
+  if (tradeFiltered && report.jobs.length !== scanned) line += ` · trade matched ${report.jobs.length}`;
   if (report.enrich.length > 0) {
     const enrichedCount = report.jobs.filter((j) => j.errors.length === 0).length;
     const errorCount = report.jobs.reduce((sum, j) => sum + j.errors.length, 0);
     line += ` · enriched ${enrichedCount} · errors ${errorCount}`;
   }
   if (!report.complete) {
-    const note = report.pageError ?? `fetched ${fetched} of ${totalLabel}`;
+    const note = report.pageError ?? `fetched ${scanned} of ${totalLabel}`;
     line += ` · PARTIAL: ${note}`;
   }
   return line;
@@ -89,14 +99,18 @@ function jobLine(entry: EnrichedJob, enrich: Enricher[]): string {
       continue;
     }
     if (source === "reps") {
-      const rep = entry.reps?.salesOwner || entry.reps?.company || "-";
-      line += ` | rep ${rep}`;
+      // Both reps, labelled: collapsing them hid which one a job is missing.
+      const salesOwner = entry.reps?.salesOwner || "-";
+      const company = entry.reps?.company || "";
+      line += ` | rep ${salesOwner}`;
+      if (company && company !== entry.reps?.salesOwner) line += ` (co ${company})`;
     } else if (source === "financials") {
       const f = entry.financials;
       line += ` | wk ${money(f?.worksheetTotal)} | appr ${money(f?.approvedJobValue)} | bal ${money(f?.balanceDue)}`;
     } else if (source === "dates") {
+      // Always emitted: a constant field count per line keeps the digest parseable.
       const approved = entry.dates?.find((d) => d.name === "Approved");
-      if (approved) line += ` | appr’d ${mmdd(approved.date)}`;
+      line += ` | appr’d ${approved ? mmdd(approved.date) : "-"}`;
     }
   }
 

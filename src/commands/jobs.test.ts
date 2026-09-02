@@ -448,6 +448,43 @@ describe("jobs commands", () => {
       process.exitCode = 0;
     });
 
+    it("prints the digest before the --out write, and a bad path does not eat the scan", async () => {
+      const { mockClient, logSpy, program } = setup();
+      const errSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+      mockClient.get = vi.fn().mockResolvedValue({ count: 1, pageSize: 25, pageStartIndex: 0, items: [
+        { id: "abc12345-x", jobName: "J", currentMilestone: "Approved", milestoneDate: "2026-07-14T00:00:00Z",
+          locationAddress: { street1: "1 Way", city: "Jupiter" }, contacts: [], tradeTypes: [] },
+      ] });
+      process.exitCode = 0;
+      await program.parseAsync(["node", "test", "jobs", "scan", "--out", "/no/such/dir/scan.jsonl"]);
+      const printed = (logSpy.mock.calls.at(-1) ?? [""])[0] as string;
+      expect(printed).toMatch(/^SCAN/);
+      expect(printed).toContain("jobs 1/1");
+      expect(errSpy.mock.calls.at(-1)?.[0]).toMatch(/^out: FAILED - /);
+      expect(process.exitCode ?? 0).toBe(0); // a file-write failure is not partial coverage
+    });
+
+    it("forwards every filter flag to the jobs API", async () => {
+      const { mockClient, program } = setup();
+      process.exitCode = 0;
+      await program.parseAsync([
+        "node", "test", "jobs", "scan",
+        "--start-date", "2026-01-01",
+        "--end-date", "2026-12-31",
+        "--date-filter-type", "MilestoneDate",
+        "--milestones", "Approved,Completed",
+        "--assignment", "assigned",
+      ]);
+      expect(mockClient.get).toHaveBeenCalledWith("/jobs", expect.objectContaining({
+        startDate: "2026-01-01",
+        endDate: "2026-12-31",
+        dateFilterType: "MilestoneDate",
+        milestones: "Approved,Completed",
+        assignment: "assigned",
+      }));
+      expect(process.exitCode ?? 0).toBe(0);
+    });
+
     it("sets exit code 3 on partial coverage", async () => {
       const { mockClient, program } = setup();
       mockClient.get = vi.fn()

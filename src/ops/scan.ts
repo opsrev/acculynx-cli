@@ -16,7 +16,10 @@ export interface ScanFilters {
 export interface ScanError { jobId: string; source: string; message: string }
 
 export interface ScanResult {
+  /** Jobs after the client-side trade filter — what the digest lists. */
   jobs: Record<string, unknown>[];
+  /** Jobs fetched from the server before any client-side filter — the coverage number. */
+  scanned: number;
   serverCount?: number;
   complete: boolean;
   pageError?: string;
@@ -53,7 +56,8 @@ export async function scanJobs(client: ApiClient, filters: ScanFilters): Promise
       break;
     }
     if (serverCount === undefined && typeof data.count === "number") serverCount = data.count;
-    const items = (data.items ?? []) as Record<string, unknown>[];
+    // A malformed page is an empty page: never spread a non-array into the results.
+    const items = Array.isArray(data.items) ? (data.items as Record<string, unknown>[]) : [];
     fetched.push(...items);
     if (items.length < PAGE_SIZE) break;
     pageStartIndex += PAGE_SIZE;
@@ -61,13 +65,21 @@ export async function scanJobs(client: ApiClient, filters: ScanFilters): Promise
 
   const complete = pageError === undefined && (serverCount === undefined || fetched.length === serverCount);
 
+  // Match the trade-type *names* only. Matching the serialized objects made
+  // "--trade-type name" match every job through the `name` key itself.
   const wanted = (filters.tradeType ?? []).map((t) => t.toLowerCase());
   const jobs = wanted.length === 0 ? fetched : fetched.filter((j) => {
-    const haystack = JSON.stringify(j.tradeTypes ?? []).toLowerCase();
-    return wanted.some((t) => haystack.includes(t));
+    const types = j.tradeTypes;
+    if (!Array.isArray(types)) return false;
+    return types.some((t) => {
+      const name = t !== null && typeof t === "object" ? (t as Record<string, unknown>).name : undefined;
+      if (typeof name !== "string") return false;
+      const lower = name.toLowerCase();
+      return wanted.some((w) => lower.includes(w));
+    });
   });
 
-  return { jobs, serverCount, complete, ...(pageError ? { pageError } : {}) };
+  return { jobs, scanned: fetched.length, serverCount, complete, ...(pageError ? { pageError } : {}) };
 }
 
 export type Enricher = "financials" | "reps" | "dates";

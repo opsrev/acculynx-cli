@@ -18,7 +18,7 @@ const report = (over: Partial<ScanReport> = {}): ScanReport => ({
   filters: { milestones: "Approved", startDate: "2026-06-01" },
   enrich: ["financials", "reps"],
   jobs: [enriched("377b4f89")],
-  serverCount: 1, complete: true, ...over,
+  scanned: 1, serverCount: 1, complete: true, ...over,
 });
 
 describe("formatScanDigest", () => {
@@ -44,6 +44,53 @@ describe("formatScanDigest", () => {
     const text = formatScanDigest(report({ enrich: [], jobs: [only] }));
     expect(text.split("\n")[2]).toBe("377b4f89 | Lisa Carelli — 8277 Grand Messina Cir, Jupiter | Approved 07-14");
     expect(text.split("\n")[1]).toBe("jobs 1/1 (server count 1)");
+  });
+
+  it("reports the pre-filter scan count and what the trade filter matched", () => {
+    const text = formatScanDigest(report({
+      filters: { milestones: "Approved", tradeType: ["gutters"] },
+      enrich: [], jobs: [enriched("377b4f89")], scanned: 2, serverCount: 2, complete: true,
+    }));
+    expect(text.split("\n")[1]).toBe("jobs 2/2 (server count 2) · trade matched 1");
+  });
+
+  it("renders both reps when the company rep differs from the sales owner", () => {
+    const both = enriched("377b4f89", { reps: { salesOwner: "Frank Leo", company: "Ana Ruiz" } });
+    const text = formatScanDigest(report({ enrich: ["reps"], jobs: [both] }));
+    expect(text.split("\n")[2]).toContain("| rep Frank Leo (co Ana Ruiz)");
+  });
+
+  it("shows a missing sales owner as '-' beside the company rep", () => {
+    const coOnly = enriched("377b4f89", { reps: { company: "Ana Ruiz" } });
+    const text = formatScanDigest(report({ enrich: ["reps"], jobs: [coOnly] }));
+    expect(text.split("\n")[2]).toContain("| rep - (co Ana Ruiz)");
+  });
+
+  it("does not repeat the company rep when it equals the sales owner", () => {
+    const same = enriched("377b4f89", { reps: { salesOwner: "Frank Leo", company: "Frank Leo" } });
+    const line = formatScanDigest(report({ enrich: ["reps"], jobs: [same] })).split("\n")[2];
+    expect(line).toContain("| rep Frank Leo");
+    expect(line).not.toContain("(co ");
+  });
+
+  it("keeps the dates field present when a job has no Approved milestone", () => {
+    const withDate = enriched("377b4f89", { dates: [{ name: "Approved", date: "2026-07-14T00:00:00Z" }] });
+    const without = enriched("9a1b2c3d", { dates: [{ name: "Lead", date: "2026-06-01T00:00:00Z" }] });
+    const [a, b] = formatScanDigest(report({ enrich: ["dates"], jobs: [withDate, without] })).split("\n").slice(2);
+    expect(a).toContain("| appr’d 07-14");
+    expect(b).toContain("| appr’d -");
+    expect(b.split("|")).toHaveLength(a.split("|").length);
+  });
+
+  it("falls back to the job name when contacts is not an array", () => {
+    const odd = enriched("377b4f89", {
+      job: {
+        id: "377b4f89-aaaa-bbbb", jobName: "Fallback Name", currentMilestone: "Approved",
+        milestoneDate: "2026-07-14T00:00:00Z", locationAddress: {}, contacts: null,
+      },
+    });
+    const text = formatScanDigest(report({ enrich: [], jobs: [odd] }));
+    expect(text.split("\n")[2]).toBe("377b4f89 | Fallback Name — -, - | Approved 07-14");
   });
 
   it("falls back to '-' for empty-string rep and address fields, not just missing ones", () => {
