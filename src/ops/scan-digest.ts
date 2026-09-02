@@ -73,8 +73,8 @@ function jobLine(entry: EnrichedJob, enrich: Enricher[]): string {
   const id8 = String(job.id ?? "").slice(0, 8);
   const name = customerName(job);
   const addr = (job.locationAddress as Record<string, unknown> | undefined) ?? {};
-  const street = String(addr.street1 ?? "-");
-  const city = String(addr.city ?? "-");
+  const street = String(addr.street1 || "-");
+  const city = String(addr.city || "-");
   const milestone = String(job.currentMilestone ?? "-");
   const date = mmdd(job.milestoneDate as string | undefined);
 
@@ -89,7 +89,7 @@ function jobLine(entry: EnrichedJob, enrich: Enricher[]): string {
       continue;
     }
     if (source === "reps") {
-      const rep = entry.reps?.salesOwner ?? entry.reps?.company ?? "-";
+      const rep = entry.reps?.salesOwner || entry.reps?.company || "-";
       line += ` | rep ${rep}`;
     } else if (source === "financials") {
       const f = entry.financials;

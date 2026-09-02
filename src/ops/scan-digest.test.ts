@@ -45,6 +45,22 @@ describe("formatScanDigest", () => {
     expect(text.split("\n")[2]).toBe("377b4f89 | Lisa Carelli — 8277 Grand Messina Cir, Jupiter | Approved 07-14");
     expect(text.split("\n")[1]).toBe("jobs 1/1 (server count 1)");
   });
+
+  it("falls back to '-' for empty-string rep and address fields, not just missing ones", () => {
+    const blank = enriched("377b4f89", {
+      job: {
+        id: "377b4f89-aaaa-bbbb", jobName: "Fallback Name", currentMilestone: "Approved",
+        milestoneDate: "2026-07-14T00:00:00Z",
+        locationAddress: { street1: "", city: "" },
+        contacts: [{ isPrimary: true, contact: { firstName: "Lisa", lastName: "Carelli" } }],
+      },
+      reps: { salesOwner: "", company: "" },
+    });
+    const text = formatScanDigest(report({ jobs: [blank] }));
+    expect(text.split("\n")[2]).toBe(
+      "377b4f89 | Lisa Carelli — -, - | Approved 07-14 | rep - | wk $38,500 | appr $0 | bal $12,300"
+    );
+  });
 });
 
 describe("formatScanJsonl", () => {
