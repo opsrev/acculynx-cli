@@ -78,6 +78,20 @@ function headerLine2(report: ScanReport): string {
   return line;
 }
 
+/**
+ * Indented follow-line carrying the newest job message when the "messages"
+ * enricher ran. Always present for that enrich set (note: - when a job has
+ * none) so the digest keeps a constant shape.
+ */
+function messagesLine(entry: EnrichedJob, enrich: Enricher[]): string | null {
+  if (!enrich.includes("messages")) return null;
+  if (entry.errors.some((e) => e.source === "messages")) return "    note ERR:messages";
+  const m = entry.messages?.[0];
+  if (!m) return "    note: -";
+  const text = m.text.slice(0, 110) || "-";
+  return `    note ${mmdd(m.date)} ${m.by || "-"}: ${text}`;
+}
+
 function jobLine(entry: EnrichedJob, enrich: Enricher[]): string {
   const job = entry.job;
   const id8 = String(job.id ?? "").slice(0, 8);
@@ -119,12 +133,26 @@ function jobLine(entry: EnrichedJob, enrich: Enricher[]): string {
 
 export function formatScanDigest(report: ScanReport): string {
   const lines: string[] = [headerLine1(report), headerLine2(report)];
-  for (const entry of report.jobs) lines.push(jobLine(entry, report.enrich));
+  for (const entry of report.jobs) {
+    lines.push(jobLine(entry, report.enrich));
+    const note = messagesLine(entry, report.enrich);
+    if (note !== null) lines.push(note);
+  }
 
   const allErrors = report.jobs.flatMap((j) => j.errors);
   if (allErrors.length > 0) {
     lines.push("errors:");
-    for (const e of allErrors) lines.push(`  ${e.jobId.slice(0, 8)} ${e.source}: ${e.message}`);
+    // Grouped: a run-level failure (e.g. the messages lib missing) otherwise
+    // repeats one identical line per job.
+    const groups = new Map<string, string[]>();
+    for (const e of allErrors) {
+      const key = `${e.source}: ${e.message}`;
+      const ids = groups.get(key) ?? [];
+      ids.push(e.jobId.slice(0, 8));
+      groups.set(key, ids);
+    }
+    for (const [key, ids] of groups)
+      lines.push(ids.length > 3 ? `  ${key} (${ids.length} jobs)` : `  ${ids.join(",")} ${key}`);
   }
 
   return lines.join("\n");

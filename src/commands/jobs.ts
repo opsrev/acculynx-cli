@@ -78,7 +78,7 @@ export function registerJobsCommands(
     .option("--milestones <milestones>", "Filter by milestones (comma-separated)")
     .option("--assignment <type>", "Filter by assignment: assigned, unassigned")
     .option("--trade-type <name>", "Client-side trade-type filter (repeatable)", collect, [])
-    .option("--enrich <list>", "Comma-separated: financials,reps,dates")
+    .option("--enrich <list>", "Comma-separated: financials,reps,dates,messages")
     .option("--format <fmt>", "digest or jsonl", "digest")
     .option("--out <path>", "Also write full jsonl to this file")
     .action(async (opts) => {

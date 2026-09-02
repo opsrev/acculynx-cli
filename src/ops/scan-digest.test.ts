@@ -117,3 +117,50 @@ describe("formatScanJsonl", () => {
     expect(JSON.parse(lines[0]).reps.salesOwner).toBe("Frank Leo");
   });
 });
+
+// --- messages note line + grouped errors (issue #51) ------------------------
+
+describe("messages note line", () => {
+  it("renders the newest message as an indented note line", () => {
+    const withMsg = enriched("377b4f89", {
+      financials: undefined, reps: undefined,
+      messages: [{ date: "2026-09-02T10:00:00Z", by: "Frank Leo", text: "call homeowner about gutters" }],
+    });
+    const text = formatScanDigest(report({ enrich: ["messages"], jobs: [withMsg] }));
+    expect(text.split("\n")[3]).toBe("    note 09-02 Frank Leo: call homeowner about gutters");
+  });
+
+  it("a job with no messages still gets a stable note line", () => {
+    const none = enriched("377b4f89", { financials: undefined, reps: undefined, messages: [] });
+    const text = formatScanDigest(report({ enrich: ["messages"], jobs: [none] }));
+    expect(text.split("\n")[3]).toBe("    note: -");
+  });
+
+  it("a messages failure renders ERR on the note line", () => {
+    const bad = enriched("377b4f89", {
+      financials: undefined, reps: undefined,
+      errors: [{ jobId: "377b4f89-aaaa-bbbb", source: "messages", message: "boom" }],
+    });
+    const text = formatScanDigest(report({ enrich: ["messages"], jobs: [bad] }));
+    expect(text.split("\n")[3]).toBe("    note ERR:messages");
+  });
+
+  it("no note lines appear without the messages enricher", () => {
+    const text = formatScanDigest(report());
+    expect(text).not.toContain("note");
+  });
+});
+
+describe("grouped error footer", () => {
+  it("collapses identical run-level errors into one line", () => {
+    const jobs = ["a1111111", "b2222222", "c3333333", "d4444444", "e5555555"].map((id) =>
+      enriched(id, {
+        financials: undefined, reps: undefined,
+        errors: [{ jobId: `${id}-x`, source: "messages", message: "Cannot find module" }],
+      })
+    );
+    const text = formatScanDigest(report({ enrich: ["messages"], jobs }));
+    expect(text).toContain("  messages: Cannot find module (5 jobs)");
+    expect(text.match(/Cannot find module/g)).toHaveLength(1);
+  });
+});
