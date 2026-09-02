@@ -424,4 +424,38 @@ describe("jobs commands", () => {
     const output = JSON.parse(logSpy.mock.calls[0][0]);
     expect(output).toEqual({ status: 200 });
   });
+
+  describe("jobs scan", () => {
+    it("scans, enriches nothing by default, prints a digest, exits 0", async () => {
+      const { mockClient, logSpy, program } = setup();
+      mockClient.get = vi.fn().mockResolvedValue({ count: 1, pageSize: 25, pageStartIndex: 0, items: [
+        { id: "abc12345-x", jobName: "J", currentMilestone: "Approved", milestoneDate: "2026-07-14T00:00:00Z",
+          locationAddress: { street1: "1 Way", city: "Jupiter" }, contacts: [], tradeTypes: [] },
+      ] });
+      await program.parseAsync(["node", "test", "jobs", "scan", "--milestones", "Approved"]);
+      const printed = (logSpy.mock.calls.at(-1) ?? [""])[0] as string;
+      expect(printed).toMatch(/^SCAN milestones=Approved/);
+      expect(printed).toContain("jobs 1/1");
+      expect(process.exitCode ?? 0).toBe(0);
+    });
+
+    it("rejects an unknown enricher with exit code 2", async () => {
+      const { program } = setup();
+      const errSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+      await program.parseAsync(["node", "test", "jobs", "scan", "--enrich", "photos"]);
+      expect(errSpy.mock.calls[0][0]).toMatch(/Unknown enricher "photos"/);
+      expect(process.exitCode).toBe(2);
+      process.exitCode = 0;
+    });
+
+    it("sets exit code 3 on partial coverage", async () => {
+      const { mockClient, program } = setup();
+      mockClient.get = vi.fn()
+        .mockResolvedValueOnce({ count: 60, pageSize: 25, pageStartIndex: 0, items: Array.from({ length: 25 }, (_, i) => ({ id: `j${i}`, contacts: [], locationAddress: {}, tradeTypes: [] })) })
+        .mockRejectedValueOnce(new Error("HTTP 500"));
+      await program.parseAsync(["node", "test", "jobs", "scan"]);
+      expect(process.exitCode).toBe(3);
+      process.exitCode = 0;
+    });
+  });
 });

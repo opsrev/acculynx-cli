@@ -1,3 +1,4 @@
+import { writeFileSync } from "node:fs";
 import type { Command } from "commander";
 import type { ApiClient } from "../api-client.js";
 import { readStdin } from "../api-helpers.js";
@@ -25,6 +26,8 @@ import {
   jobAddExpense,
   jobUploadDocument,
 } from "../ops/jobs.js";
+import { scanJobs, enrichJobs, ENRICHERS, type Enricher, type ScanFilters } from "../ops/scan.js";
+import { formatScanDigest, formatScanJsonl } from "../ops/scan-digest.js";
 
 // Commander option collector: accumulate repeated flags into an array.
 function collect(value: string, previous: string[]): string[] {
@@ -64,6 +67,48 @@ export function registerJobsCommands(
         limit,
       });
       console.log(JSON.stringify(result));
+    });
+
+  jobs
+    .command("scan")
+    .description("Fetch ALL matching jobs and print a digest with a coverage receipt")
+    .option("--start-date <date>", "Start date (YYYY-MM-DD)")
+    .option("--end-date <date>", "End date (YYYY-MM-DD)")
+    .option("--date-filter-type <type>", "Date field to filter on")
+    .option("--milestones <milestones>", "Filter by milestones (comma-separated)")
+    .option("--assignment <type>", "Filter by assignment: assigned, unassigned")
+    .option("--trade-type <name>", "Client-side trade-type filter (repeatable)", collect, [])
+    .option("--enrich <list>", "Comma-separated: financials,reps,dates")
+    .option("--format <fmt>", "digest or jsonl", "digest")
+    .option("--out <path>", "Also write full jsonl to this file")
+    .action(async (opts) => {
+      const enrich = String(opts.enrich ?? "").split(",").map((s: string) => s.trim()).filter(Boolean) as Enricher[];
+      const badEnricher = enrich.find((e) => !ENRICHERS.includes(e));
+      if (badEnricher) {
+        console.error(`Unknown enricher "${badEnricher}" (valid: ${ENRICHERS.join(", ")})`);
+        process.exitCode = 2;
+        return;
+      }
+      if (opts.format !== "digest" && opts.format !== "jsonl") {
+        console.error("Unknown --format (valid: digest, jsonl)");
+        process.exitCode = 2;
+        return;
+      }
+
+      const filters: ScanFilters = {
+        startDate: opts.startDate,
+        endDate: opts.endDate,
+        dateFilterType: opts.dateFilterType,
+        milestones: opts.milestones,
+        assignment: opts.assignment,
+        tradeType: opts.tradeType.length ? opts.tradeType : undefined,
+      };
+      const result = await scanJobs(getClient(), filters);
+      const enrichedJobs = await enrichJobs(getClient(), result.jobs, enrich);
+      const report = { filters, enrich, jobs: enrichedJobs, serverCount: result.serverCount, complete: result.complete, ...(result.pageError ? { pageError: result.pageError } : {}) };
+      if (opts.out) writeFileSync(opts.out, formatScanJsonl(report) + "\n");
+      console.log(opts.format === "jsonl" ? formatScanJsonl(report) : formatScanDigest(report));
+      if (!result.complete) process.exitCode = 3;
     });
 
   jobs
