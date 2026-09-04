@@ -1,6 +1,7 @@
 name: Release
 
 on:
+  workflow_dispatch:
   push:
     branches: [main]
 
@@ -12,6 +13,7 @@ permissions:
 
 jobs:
   release-please:
+    if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     outputs:
       release_created: ${{ steps.release.outputs.release_created }}
@@ -76,6 +78,7 @@ jobs:
   # publishes it whenever wrapper/package.json's version is not already on npm.
   # To cut a new wrapper release, bump that version and merge to main.
   publish-wrapper:
+    if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
