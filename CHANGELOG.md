@@ -1,5 +1,18 @@
 # Changelog
 
+## [1.16.0](https://github.com/opsrev/acculynx-cli/compare/v1.15.0...v1.16.0) (2026-09-04)
+
+
+### Features
+
+* **scan:** add restricted marketing evidence output ([cfacd8c](https://github.com/opsrev/acculynx-cli/commit/cfacd8c87e0b061c5e933b6cfce219ddeda26c6f))
+
+
+### Bug Fixes
+
+* **ci:** allow manual releases from main ([8d8acba](https://github.com/opsrev/acculynx-cli/commit/8d8acba6c4f76284a3ef0bc972d03a9aacc00b39))
+* **ci:** serialize release workflow runs ([2a24e32](https://github.com/opsrev/acculynx-cli/commit/2a24e32ad5125bbf8e27475a355b06057c081cdf))
+
 ## [1.15.0](https://github.com/opsrev/acculynx-cli/compare/v1.14.0...v1.15.0) (2026-09-02)
 
 
