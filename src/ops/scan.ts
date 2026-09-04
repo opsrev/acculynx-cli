@@ -32,7 +32,7 @@ interface Page { count?: number; items?: unknown[] }
  * digest can prove coverage. paginate() in api-helpers throws that count away,
  * which is exactly the number a scan exists to report — hence the local pager.
  */
-export async function scanJobs(client: ApiClient, filters: ScanFilters): Promise<ScanResult> {
+export async function scanJobs(client: ApiClient, filters: ScanFilters, options: { strict?: boolean } = {}): Promise<ScanResult> {
   const params: Record<string, string> = { includes: "contact", sortBy: "CreatedDate" };
   if (filters.startDate) params.startDate = filters.startDate;
   if (filters.endDate) params.endDate = filters.endDate;
@@ -44,6 +44,7 @@ export async function scanJobs(client: ApiClient, filters: ScanFilters): Promise
   let serverCount: number | undefined;
   let pageError: string | undefined;
   let pageStartIndex = 0;
+  const seen = new Set<string>();
 
   while (true) {
     let data: Page;
@@ -54,6 +55,21 @@ export async function scanJobs(client: ApiClient, filters: ScanFilters): Promise
     } catch (error) {
       pageError = error instanceof Error ? error.message : String(error);
       break;
+    }
+    if (options.strict) {
+      const page = data as Page & { pageStartIndex?: unknown };
+      if (page === null || typeof page !== "object") { pageError = "invalid_page"; break; }
+      if (!Number.isSafeInteger(page.count) || page.count! < 0 || !Array.isArray(page.items) || page.items.length > PAGE_SIZE || page.pageStartIndex !== pageStartIndex) { pageError = "invalid_page"; break; }
+      if (serverCount !== undefined && serverCount !== page.count) { pageError = "changing_inventory"; break; }
+      let invalidId = false;
+      for (const item of page.items) {
+        const id = item !== null && typeof item === "object" ? (item as Record<string, unknown>).id : undefined;
+        if (typeof id !== "string" || !/^[A-Za-z0-9][A-Za-z0-9._:-]{0,199}$/.test(id) || seen.has(id)) { invalidId = true; break; }
+        seen.add(id);
+      }
+      if (invalidId) { pageError = "duplicate_or_missing_job_id"; break; }
+      if (fetched.length + page.items.length > page.count!) { pageError = "count_mismatch"; break; }
+      if (pageStartIndex >= 50000) { pageError = "page_limit"; break; }
     }
     if (serverCount === undefined && typeof data.count === "number") serverCount = data.count;
     // A malformed page is an empty page: never spread a non-array into the results.
@@ -174,7 +190,8 @@ export async function enrichJobs(
           entry.reps = reps;
         } else if (source === "dates") {
           const m = asRecord(await jobMilestones(client, jobId));
-          entry.dates = ((m.items as Array<Record<string, unknown>> | undefined) ?? []).map((i) => ({
+          if (!Array.isArray(m.items) || m.items.some(i => i === null || typeof i !== "object")) throw new Error("invalid_milestone_history");
+          entry.dates = (m.items as Array<Record<string, unknown>>).map((i) => ({
             name: String(i.name ?? ""), date: String(i.date ?? ""),
           }));
         } else if (source === "messages") {

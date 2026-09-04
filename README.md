@@ -159,3 +159,36 @@ npm run dev -- jobs list --limit 5
 ## License
 
 MIT
+
+### Private marketing evidence from a native scan
+
+Operators preparing approval-date reconciliation can preserve exact source
+fields without parsing the rounded human digest:
+
+```bash
+acculynx jobs scan --start-date 2026-07-01 --end-date 2026-09-04 --date-filter-type ModifiedDate --enrich dates,financials --format marketing-evidence
+```
+
+This emits one `acculynx-marketing-evidence/v1` JSON object. It is **private
+operator evidence** containing full job IDs and individual values; do not post
+it in a vendor/customer channel. It excludes contacts, addresses, names,
+notes, documents, unrelated financials and raw provider error bodies.
+`--out` and other enrichers are rejected before reading. Redirect stdout only
+into an appropriately protected operator workspace if retaining the artifact.
+This format does not alter downstream agents' command allowlists or authorize
+them to export records.
+
+The receipt distinguishes query completeness from enrichment completeness.
+Strict pagination requires a numeric stable total, advancing offsets and unique
+job IDs. Exit 3 means partial evidence; never publish it as a complete result.
+Full source dates are preserved without timezone conversion, repeated approval
+milestones remain separate, and current approved value is represented in exact
+cents. Missing/invalid values and dates remain null with issue codes.
+
+This is not an approval cohort, an original-acquisition attribution, a complete
+lead-delivery inventory or historical revenue. ModifiedDate is a candidate
+filter; confirm historical and unassigned/dead-lead coverage separately. Review
+source date semantics, repeated approvals, transfers and current-versus-original
+contract value before producing normalized results. A large historical scan
+reads history and financials for each candidate; bootstrap it separately from
+short daily marketing jobs, then validate an incremental refresh strategy.

@@ -28,6 +28,7 @@ import {
 } from "../ops/jobs.js";
 import { scanJobs, enrichJobs, ENRICHERS, type Enricher, type ScanFilters } from "../ops/scan.js";
 import { formatScanDigest, formatScanJsonl } from "../ops/scan-digest.js";
+import { marketingEvidence } from "../ops/scan-marketing.js";
 
 // Commander option collector: accumulate repeated flags into an array.
 function collect(value: string, previous: string[]): string[] {
@@ -79,7 +80,7 @@ export function registerJobsCommands(
     .option("--assignment <type>", "Filter by assignment: assigned, unassigned")
     .option("--trade-type <name>", "Client-side trade-type filter (repeatable)", collect, [])
     .option("--enrich <list>", "Comma-separated: financials,reps,dates,messages")
-    .option("--format <fmt>", "digest or jsonl", "digest")
+    .option("--format <fmt>", "digest, jsonl, or marketing-evidence (private operator data)", "digest")
     .option("--out <path>", "Also write full jsonl to this file")
     .action(async (opts) => {
       const enrich = String(opts.enrich ?? "").split(",").map((s: string) => s.trim()).filter(Boolean) as Enricher[];
@@ -89,8 +90,14 @@ export function registerJobsCommands(
         process.exitCode = 2;
         return;
       }
-      if (opts.format !== "digest" && opts.format !== "jsonl") {
-        console.error("Unknown --format (valid: digest, jsonl)");
+      if (!["digest", "jsonl", "marketing-evidence"].includes(opts.format)) {
+        console.error("Unknown --format (valid: digest, jsonl, marketing-evidence)");
+        process.exitCode = 2;
+        return;
+      }
+
+      if (opts.format === "marketing-evidence" && (opts.out || !enrich.includes("dates") || !enrich.includes("financials") || enrich.some(e => e !== "dates" && e !== "financials"))) {
+        console.error("marketing-evidence requires --enrich dates,financials and forbids --out or other enrichers");
         process.exitCode = 2;
         return;
       }
@@ -103,12 +110,13 @@ export function registerJobsCommands(
         assignment: opts.assignment,
         tradeType: opts.tradeType.length ? opts.tradeType : undefined,
       };
-      const result = await scanJobs(getClient(), filters);
+      const result = await scanJobs(getClient(), filters, { strict: opts.format === "marketing-evidence" });
       const enrichedJobs = await enrichJobs(getClient(), result.jobs, enrich);
       const report = { filters, enrich, jobs: enrichedJobs, scanned: result.scanned, serverCount: result.serverCount, complete: result.complete, ...(result.pageError ? { pageError: result.pageError } : {}) };
       // Print before writing: a bad --out path must never swallow a paid-for scan.
-      console.log(opts.format === "jsonl" ? formatScanJsonl(report) : formatScanDigest(report));
-      if (!result.complete) process.exitCode = 3;
+      const evidence = opts.format === "marketing-evidence" ? marketingEvidence(report) : null;
+      console.log(evidence ? JSON.stringify(evidence) : opts.format === "jsonl" ? formatScanJsonl(report) : formatScanDigest(report));
+      if (!result.complete || (evidence && (!evidence.coverage.queryComplete || !evidence.coverage.enrichmentComplete))) process.exitCode = 3;
       if (opts.out) {
         try {
           writeFileSync(opts.out, formatScanJsonl(report) + "\n");

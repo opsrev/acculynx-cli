@@ -184,3 +184,34 @@ describe("enrichJobs: messages", () => {
     expect(loader).toHaveBeenCalledTimes(1);
   });
 });
+
+describe("strict evidence pagination", () => {
+  it.each([
+    { count: undefined, pageStartIndex: 0, items: [] },
+    { count: 0, pageStartIndex: 0, items: null },
+    { count: 0, pageStartIndex: 25, items: [] },
+  ])("rejects malformed/missing coverage", async response => {
+    const result = await scanJobs(clientFromPages([response]), {}, { strict: true });
+    expect(result.complete).toBe(false);
+    expect(result.pageError).toBe("invalid_page");
+  });
+  it("stops a repeated page before further requests", async () => {
+    const items = Array.from({ length: 25 }, (_, i) => job(`j${i}`));
+    const client = clientFromPages([{ count: 50, pageStartIndex: 0, items }, { count: 50, pageStartIndex: 25, items }]);
+    const result = await scanJobs(client, {}, { strict: true });
+    expect(result.complete).toBe(false);
+    expect(result.pageError).toBe("duplicate_or_missing_job_id");
+    expect(client.get).toHaveBeenCalledTimes(2);
+  });
+  it("rejects changing counts and accepts consistent advancing pages", async () => {
+    const items = Array.from({ length: 25 }, (_, i) => job(`j${i}`));
+    const first = { count: 26, pageStartIndex: 0, items };
+    expect((await scanJobs(clientFromPages([first, { count: 27, pageStartIndex: 25, items: [job("last")] }]), {}, { strict: true })).pageError).toBe("changing_inventory");
+    expect((await scanJobs(clientFromPages([first, { count: 26, pageStartIndex: 25, items: [job("last")] }]), {}, { strict: true })).complete).toBe(true);
+  });
+  it("does not turn malformed history into an empty successful history", async () => {
+    const result = await enrichJobs(clientFromPages([{}]), [{ id: "j1" }], ["dates"]);
+    expect(result[0].errors[0].source).toBe("dates");
+    expect(result[0].dates).toBeUndefined();
+  });
+});
