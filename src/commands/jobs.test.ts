@@ -505,3 +505,28 @@ describe("jobs commands", () => {
     expect(printed).toContain("enrich=messages");
     expect(process.exitCode ?? 0).toBe(0);
   });
+
+describe("marketing evidence CLI", () => {
+  afterEach(() => { vi.restoreAllMocks(); process.exitCode = 0; });
+  it.each([
+    [], ["--enrich", "dates"],
+    ["--enrich", "dates,financials,messages"],
+    ["--enrich", "dates,financials", "--out", "/tmp/no-evidence-dump"],
+  ].map(extra => ({ extra })))("rejects unsafe/incomplete options before any read", async ({ extra }) => {
+    const { program, mockClient } = setup();
+    vi.spyOn(console, "error").mockImplementation(() => {});
+    await program.parseAsync(["node", "test", "jobs", "scan", "--format", "marketing-evidence", ...extra]);
+    expect(process.exitCode).toBe(2);
+    expect(mockClient.get).not.toHaveBeenCalled();
+  });
+  it("prints one structured result and exits 3 on missing enrichment", async () => {
+    const { program, mockClient, logSpy } = setup();
+    mockClient.get = vi.fn(async path => path === "/jobs" ? { count: 1, pageStartIndex: 0, items: [{ id: "j1", createdDate: "2026-07-01", modifiedDate: "2026-08-01" }] } : {});
+    await program.parseAsync(["node", "test", "jobs", "scan", "--format", "marketing-evidence", "--enrich", "dates,financials"]);
+    const result = JSON.parse(logSpy.mock.calls.at(-1)![0]);
+    expect(result.schemaVersion).toBe("acculynx-marketing-evidence/v1");
+    expect(result.coverage.queryComplete).toBe(true);
+    expect(result.coverage.enrichmentComplete).toBe(false);
+    expect(process.exitCode).toBe(3);
+  });
+});
