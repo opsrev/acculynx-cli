@@ -46,6 +46,24 @@ describe("paginate", () => {
     });
   });
 
+  it("stops without requesting an empty page when the total is a multiple of the page size", async () => {
+    const page1 = Array.from({ length: 25 }, (_, i) => ({ id: i }));
+    const page2 = Array.from({ length: 25 }, (_, i) => ({ id: 25 + i }));
+    const mockClient: ApiClient = {
+      get: vi
+        .fn()
+        .mockResolvedValueOnce({ count: 50, pageSize: 25, pageStartIndex: 0, items: page1 })
+        .mockResolvedValueOnce({ count: 50, pageSize: 25, pageStartIndex: 25, items: page2 })
+        .mockRejectedValue(new Error("API error (416 Requested Range Not Satisfiable)")),
+      post: vi.fn(),
+      postForm: vi.fn(),
+    };
+
+    const result = await paginate(mockClient, "/jobs", {}, Infinity);
+    expect(result).toHaveLength(50);
+    expect(mockClient.get).toHaveBeenCalledTimes(2);
+  });
+
   it("respects limit param", async () => {
     const page1 = Array.from({ length: 25 }, (_, i) => ({ id: i }));
     const mockClient: ApiClient = {
