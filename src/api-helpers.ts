@@ -37,6 +37,13 @@ export async function paginate(
       break;
     }
 
+    // When the total is an exact multiple of the page size, asking for the
+    // next page returns 416 ("Page Start Index must be less than the number of
+    // records"), so stop once the reported count has been read.
+    if (typeof data.count === "number" && pageStartIndex + DEFAULT_PAGE_SIZE >= data.count) {
+      break;
+    }
+
     pageStartIndex += DEFAULT_PAGE_SIZE;
   }
 
