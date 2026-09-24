@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.16.1](https://github.com/opsrev/acculynx-cli/compare/v1.16.0...v1.16.1) (2026-09-24)
+
+
+### Bug Fixes
+
+* **paginate:** stop at the reported count instead of requesting an empty page ([#58](https://github.com/opsrev/acculynx-cli/issues/58)) ([cdcaf2d](https://github.com/opsrev/acculynx-cli/commit/cdcaf2d29c9c3e51a5f5c5a7fc8727376f1b3740))
+
 ## [1.16.0](https://github.com/opsrev/acculynx-cli/compare/v1.15.0...v1.16.0) (2026-09-04)
 
 
