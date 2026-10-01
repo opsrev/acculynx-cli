@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.17.0](https://github.com/opsrev/acculynx-cli/compare/v1.16.1...v1.17.0) (2026-10-01)
+
+
+### Features
+
+* **scan:** payments enricher, --strict and a jsonl coverage line ([#61](https://github.com/opsrev/acculynx-cli/issues/61)) ([13ba4f6](https://github.com/opsrev/acculynx-cli/commit/13ba4f6be92f0a1e1e9e5985615d00ae2fea0dd5))
+
 ## [1.16.1](https://github.com/opsrev/acculynx-cli/compare/v1.16.0...v1.16.1) (2026-09-24)
 
 
