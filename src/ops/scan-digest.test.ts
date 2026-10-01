@@ -196,3 +196,22 @@ describe("grouped error footer", () => {
     expect(text.match(/Cannot find module/g)).toHaveLength(1);
   });
 });
+
+describe("payments digest field", () => {
+  const base = "377b4f89 | Lisa Carelli — 8277 Grand Messina Cir, Jupiter | Approved 07-14";
+
+  it("renders received payments as total and count", () => {
+    const job = enriched("377b4f89", { payments: [{ id: "p1", amount: 12000 }, { id: "p2", amount: 5000 }] });
+    expect(formatScanDigest(report({ enrich: ["payments"], jobs: [job] })).split("\n")[2]).toBe(`${base} | paid $17,000 (2)`);
+  });
+
+  it("a job with no payments shows $0 (0)", () => {
+    const job = enriched("377b4f89", { payments: [] });
+    expect(formatScanDigest(report({ enrich: ["payments"], jobs: [job] })).split("\n")[2]).toBe(`${base} | paid $0 (0)`);
+  });
+
+  it("a payments failure renders ERR:payments", () => {
+    const job = enriched("377b4f89", { errors: [{ jobId: "377b4f89-aaaa-bbbb", source: "payments", message: "HTTP 500" }] });
+    expect(formatScanDigest(report({ enrich: ["payments"], jobs: [job] })).split("\n")[2]).toBe(`${base} | ERR:payments`);
+  });
+});

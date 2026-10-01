@@ -106,7 +106,7 @@ function jobLine(entry: EnrichedJob, enrich: Enricher[]): string {
 
   const erroredSources = new Set(entry.errors.map((e) => e.source));
 
-  for (const source of ["reps", "financials", "dates"] as Enricher[]) {
+  for (const source of ["reps", "financials", "dates", "payments"] as Enricher[]) {
     if (!enrich.includes(source)) continue;
     if (erroredSources.has(source)) {
       line += ` | ERR:${source}`;
@@ -125,6 +125,10 @@ function jobLine(entry: EnrichedJob, enrich: Enricher[]): string {
       // Always emitted: a constant field count per line keeps the digest parseable.
       const approved = entry.dates?.find((d) => d.name === "Approved");
       line += ` | appr’d ${approved ? mmdd(approved.date) : "-"}`;
+    } else if (source === "payments") {
+      const payments = entry.payments ?? [];
+      const total = payments.reduce((sum, p) => sum + (typeof p.amount === "number" ? p.amount : 0), 0);
+      line += ` | paid ${money(total)} (${payments.length})`;
     }
   }
 
