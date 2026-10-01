@@ -82,7 +82,7 @@ export function registerJobsCommands(
     .option("--enrich <list>", "Comma-separated: financials,reps,dates,messages,payments")
     .option("--format <fmt>", "digest, jsonl, or marketing-evidence (private operator data)", "digest")
     .option("--out <path>", "Also write full jsonl to this file")
-    .option("--strict", "Strict coverage: any pagination anomaly makes the scan partial (exit 3). Implied by --enrich payments")
+    .option("--strict", "Strict coverage: any pagination anomaly makes the scan partial (exit 3), and jsonl output ends with a {\"type\":\"coverage\"} line. Implied by --enrich payments")
     .action(async (opts) => {
       const enrich = String(opts.enrich ?? "").split(",").map((s: string) => s.trim()).filter(Boolean) as Enricher[];
       const badEnricher = enrich.find((e) => !ENRICHERS.includes(e));
@@ -118,11 +118,12 @@ export function registerJobsCommands(
       const report = { filters, enrich, jobs: enrichedJobs, scanned: result.scanned, serverCount: result.serverCount, complete: result.complete, ...(result.pageError ? { pageError: result.pageError } : {}) };
       // Print before writing: a bad --out path must never swallow a paid-for scan.
       const evidence = opts.format === "marketing-evidence" ? marketingEvidence(report) : null;
-      console.log(evidence ? JSON.stringify(evidence) : opts.format === "jsonl" ? formatScanJsonl(report) : formatScanDigest(report));
+      const jsonl = formatScanJsonl(report, { receipt: strict });
+      console.log(evidence ? JSON.stringify(evidence) : opts.format === "jsonl" ? jsonl : formatScanDigest(report));
       if (!result.complete || (evidence && (!evidence.coverage.queryComplete || !evidence.coverage.enrichmentComplete))) process.exitCode = 3;
       if (opts.out) {
         try {
-          writeFileSync(opts.out, formatScanJsonl(report) + "\n");
+          writeFileSync(opts.out, jsonl + "\n");
         } catch (error) {
           // Reported, but not as an exit code: a failed file write is not partial coverage.
           console.error(`out: FAILED - ${error instanceof Error ? error.message : String(error)}`);

@@ -2,6 +2,10 @@ import { describe, it, expect, vi, afterEach } from "vitest";
 import { Command } from "commander";
 import { registerJobsCommands } from "./jobs.js";
 import type { ApiClient } from "../api-client.js";
+import { mkdtempSync } from "node:fs";
+import { readFile } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 
 vi.mock("node:fs", async (importOriginal) => {
   const actual = await importOriginal<typeof import("node:fs")>();
@@ -514,6 +518,65 @@ describe("jobs commands", () => {
       mockClient.get = vi.fn().mockResolvedValue(unechoedPage);
       process.exitCode = 0;
       await program.parseAsync(["node", "test", "jobs", "scan", "--enrich", "payments"]);
+      expect(process.exitCode).toBe(3);
+      process.exitCode = 0;
+    });
+
+    const strictPage = { count: 1, pageSize: 25, pageStartIndex: 0, items: [
+      { id: "j1", jobName: "J", currentMilestone: "Approved", milestoneDate: "2026-07-14T00:00:00Z",
+        locationAddress: { street1: "1 Way", city: "Jupiter" }, contacts: [], tradeTypes: [] },
+    ] };
+    const payment = { id: "p1", amount: 12000, paymentDate: "2025-05-08T04:00:00Z" };
+    const route = (path: string) =>
+      path === "/jobs/j1/payments" ? { receivedPayments: { payments: [payment], total: 12000 } } : strictPage;
+
+    it("plain --format jsonl output has no coverage line", async () => {
+      const { mockClient, logSpy, program } = setup();
+      mockClient.get = vi.fn().mockResolvedValue(strictPage);
+      process.exitCode = 0;
+      await program.parseAsync(["node", "test", "jobs", "scan", "--format", "jsonl"]);
+      const lines = String(logSpy.mock.calls.at(-1)?.[0]).split("\n");
+      expect(lines).toHaveLength(1);
+      expect(JSON.parse(lines[0]).job.id).toBe("j1");
+    });
+
+    it("--strict --format jsonl ends with the coverage line", async () => {
+      const { mockClient, logSpy, program } = setup();
+      mockClient.get = vi.fn().mockResolvedValue(strictPage);
+      process.exitCode = 0;
+      await program.parseAsync(["node", "test", "jobs", "scan", "--strict", "--format", "jsonl"]);
+      const lines = String(logSpy.mock.calls.at(-1)?.[0]).split("\n");
+      expect(lines).toHaveLength(2);
+      expect(JSON.parse(lines[1])).toEqual({
+        type: "coverage", scanned: 1, serverCount: 1, complete: true, pageError: null, enrichErrors: 0,
+      });
+      expect(process.exitCode ?? 0).toBe(0);
+    });
+
+    it("the monitor invocation writes payments plus the coverage line to --out", async () => {
+      const { mockClient, program } = setup();
+      mockClient.get = vi.fn(async (path: string) => route(path));
+      const out = join(mkdtempSync(join(tmpdir(), "scan-")), "payments.jsonl");
+      process.exitCode = 0;
+      await program.parseAsync([
+        "node", "test", "jobs", "scan", "--milestones", "Approved,Completed,Invoiced",
+        "--enrich", "payments", "--strict", "--format", "jsonl", "--out", out,
+      ]);
+      const lines = (await readFile(out, "utf8")).trimEnd().split("\n");
+      expect(lines).toHaveLength(2);
+      expect(JSON.parse(lines[0]).payments).toEqual([payment]);
+      expect(JSON.parse(lines[1])).toMatchObject({ type: "coverage", complete: true, enrichErrors: 0 });
+      expect(process.exitCode ?? 0).toBe(0);
+    });
+
+    it("a partial strict scan still writes the receipt (complete:false) and exits 3", async () => {
+      const { mockClient, program } = setup();
+      mockClient.get = vi.fn().mockRejectedValue(new Error("HTTP 500"));
+      const out = join(mkdtempSync(join(tmpdir(), "scan-")), "payments.jsonl");
+      process.exitCode = 0;
+      await program.parseAsync(["node", "test", "jobs", "scan", "--enrich", "payments", "--format", "jsonl", "--out", out]);
+      const receipt = JSON.parse((await readFile(out, "utf8")).trimEnd().split("\n").at(-1)!);
+      expect(receipt).toMatchObject({ type: "coverage", complete: false, pageError: "HTTP 500" });
       expect(process.exitCode).toBe(3);
       process.exitCode = 0;
     });

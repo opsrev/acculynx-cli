@@ -116,6 +116,38 @@ describe("formatScanJsonl", () => {
     expect(lines).toHaveLength(1);
     expect(JSON.parse(lines[0]).reps.salesOwner).toBe("Frank Leo");
   });
+
+  it("without a receipt the output is exactly the job lines, byte for byte", () => {
+    const r = report({ jobs: [enriched("aaaaaaaa"), enriched("bbbbbbbb")] });
+    const expected = r.jobs.map((j) => JSON.stringify(j)).join("\n");
+    expect(formatScanJsonl(r)).toBe(expected);
+    expect(formatScanJsonl(r, { receipt: false })).toBe(expected);
+  });
+
+  it("with a receipt, appends one coverage line after the jobs", () => {
+    const lines = formatScanJsonl(report(), { receipt: true }).split("\n");
+    expect(lines).toHaveLength(2);
+    expect(JSON.parse(lines[0]).type).toBeUndefined();
+    expect(lines[1]).toBe('{"type":"coverage","scanned":1,"serverCount":1,"complete":true,"pageError":null,"enrichErrors":0}');
+  });
+
+  it("a partial scan's receipt carries complete:false, the pageError and a null serverCount", () => {
+    const r = report({ jobs: [], scanned: 0, serverCount: undefined, complete: false, pageError: "HTTP 500" });
+    expect(JSON.parse(formatScanJsonl(r, { receipt: true }))).toEqual({
+      type: "coverage", scanned: 0, serverCount: null, complete: false, pageError: "HTTP 500", enrichErrors: 0,
+    });
+  });
+
+  it("counts every per-job enrichment error", () => {
+    const bad = enriched("bbbbbbbb", { errors: [
+      { jobId: "b", source: "payments", message: "HTTP 500" },
+      { jobId: "b", source: "financials", message: "HTTP 500" },
+    ] });
+    const r = report({ jobs: [enriched("aaaaaaaa"), bad], scanned: 2, serverCount: 2 });
+    const receipt = JSON.parse(formatScanJsonl(r, { receipt: true }).split("\n").at(-1)!);
+    expect(receipt.enrichErrors).toBe(2);
+    expect(receipt.complete).toBe(true); // enrichment errors are not coverage gaps
+  });
 });
 
 // --- messages note line + grouped errors (issue #51) ------------------------

@@ -158,6 +158,23 @@ export function formatScanDigest(report: ScanReport): string {
   return lines.join("\n");
 }
 
-export function formatScanJsonl(report: ScanReport): string {
-  return report.jobs.map((j) => JSON.stringify(j)).join("\n");
+/**
+ * Final jsonl line for strict scans, so a script can check coverage without
+ * inferring it from the exit code. Job lines never carry a top-level `type`.
+ */
+export function coverageLine(report: ScanReport): string {
+  return JSON.stringify({
+    type: "coverage",
+    scanned: report.scanned,
+    serverCount: report.serverCount ?? null,
+    complete: report.complete,
+    pageError: report.pageError ?? null,
+    enrichErrors: report.jobs.reduce((sum, j) => sum + j.errors.length, 0),
+  });
+}
+
+export function formatScanJsonl(report: ScanReport, options: { receipt?: boolean } = {}): string {
+  const lines = report.jobs.map((j) => JSON.stringify(j));
+  if (options.receipt) lines.push(coverageLine(report));
+  return lines.join("\n");
 }
