@@ -1,5 +1,5 @@
 import type { ApiClient } from "../api-client.js";
-import { jobFinancials, jobMilestones, jobReps } from "./jobs.js";
+import { jobFinancials, jobMilestones, jobPayments, jobReps } from "./jobs.js";
 import { paginate } from "../api-helpers.js";
 
 const PAGE_SIZE = 25;
@@ -98,8 +98,8 @@ export async function scanJobs(client: ApiClient, filters: ScanFilters, options:
   return { jobs, scanned: fetched.length, serverCount, complete, ...(pageError ? { pageError } : {}) };
 }
 
-export type Enricher = "financials" | "reps" | "dates" | "messages";
-export const ENRICHERS: readonly Enricher[] = ["financials", "reps", "dates", "messages"];
+export type Enricher = "financials" | "reps" | "dates" | "messages" | "payments";
+export const ENRICHERS: readonly Enricher[] = ["financials", "reps", "dates", "messages", "payments"];
 
 export interface EnrichedJob {
   job: Record<string, unknown>;
@@ -107,6 +107,8 @@ export interface EnrichedJob {
   reps?: { company?: string; salesOwner?: string };
   dates?: Array<{ name: string; date: string }>;
   messages?: Array<{ date: string; by: string; text: string }>;
+  /** Full received-payment objects, unmodified — the payment monitor dedupes on id. */
+  payments?: Record<string, unknown>[];
   errors: ScanError[];
 }
 
@@ -207,6 +209,14 @@ export async function enrichJobs(
               by: String(msg.createdBy ?? ""),
               text: String(msg.message ?? "").replace(/\s+/g, " ").trim().slice(0, 200),
             }));
+        } else if (source === "payments") {
+          // A malformed list is an error, never "no payments": an empty list
+          // would read as a job nobody has paid on and suppress an alert.
+          const received = asRecord(asRecord(await jobPayments(client, jobId)).receivedPayments);
+          if (!Array.isArray(received.payments) || received.payments.some((p) => p === null || typeof p !== "object")) {
+            throw new Error("invalid_payments");
+          }
+          entry.payments = received.payments as Record<string, unknown>[];
         }
       } catch (error) {
         entry.errors.push({ jobId, source, message: error instanceof Error ? error.message : String(error) });
