@@ -79,9 +79,10 @@ export function registerJobsCommands(
     .option("--milestones <milestones>", "Filter by milestones (comma-separated)")
     .option("--assignment <type>", "Filter by assignment: assigned, unassigned")
     .option("--trade-type <name>", "Client-side trade-type filter (repeatable)", collect, [])
-    .option("--enrich <list>", "Comma-separated: financials,reps,dates,messages")
+    .option("--enrich <list>", "Comma-separated: financials,reps,dates,messages,payments")
     .option("--format <fmt>", "digest, jsonl, or marketing-evidence (private operator data)", "digest")
     .option("--out <path>", "Also write full jsonl to this file")
+    .option("--strict", "Strict coverage: any pagination anomaly makes the scan partial (exit 3). Implied by --enrich payments")
     .action(async (opts) => {
       const enrich = String(opts.enrich ?? "").split(",").map((s: string) => s.trim()).filter(Boolean) as Enricher[];
       const badEnricher = enrich.find((e) => !ENRICHERS.includes(e));
@@ -110,7 +111,9 @@ export function registerJobsCommands(
         assignment: opts.assignment,
         tradeType: opts.tradeType.length ? opts.tradeType : undefined,
       };
-      const result = await scanJobs(getClient(), filters, { strict: opts.format === "marketing-evidence" });
+      // A missed payment alert is worse than a failed run: payments always scans strict.
+      const strict = Boolean(opts.strict) || opts.format === "marketing-evidence" || enrich.includes("payments");
+      const result = await scanJobs(getClient(), filters, { strict });
       const enrichedJobs = await enrichJobs(getClient(), result.jobs, enrich);
       const report = { filters, enrich, jobs: enrichedJobs, scanned: result.scanned, serverCount: result.serverCount, complete: result.complete, ...(result.pageError ? { pageError: result.pageError } : {}) };
       // Print before writing: a bad --out path must never swallow a paid-for scan.

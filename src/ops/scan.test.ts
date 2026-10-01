@@ -209,6 +209,11 @@ describe("strict evidence pagination", () => {
     expect((await scanJobs(clientFromPages([first, { count: 27, pageStartIndex: 25, items: [job("last")] }]), {}, { strict: true })).pageError).toBe("changing_inventory");
     expect((await scanJobs(clientFromPages([first, { count: 26, pageStartIndex: 25, items: [job("last")] }]), {}, { strict: true })).complete).toBe(true);
   });
+  it("rejects a page holding more jobs than the server count", async () => {
+    const result = await scanJobs(clientFromPages([{ count: 1, pageStartIndex: 0, items: [job("a1"), job("a2")] }]), {}, { strict: true });
+    expect(result.complete).toBe(false);
+    expect(result.pageError).toBe("count_mismatch");
+  });
   it("does not turn malformed history into an empty successful history", async () => {
     const result = await enrichJobs(clientFromPages([{}]), [{ id: "j1" }], ["dates"]);
     expect(result[0].errors[0].source).toBe("dates");

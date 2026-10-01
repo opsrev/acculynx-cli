@@ -485,6 +485,39 @@ describe("jobs commands", () => {
       expect(process.exitCode ?? 0).toBe(0);
     });
 
+    const unechoedPage = { count: 1, pageSize: 25, items: [
+      { id: "j1", jobName: "J", currentMilestone: "Approved", milestoneDate: "2026-07-14T00:00:00Z",
+        locationAddress: { street1: "1 Way", city: "Jupiter" }, contacts: [], tradeTypes: [] },
+    ] };
+
+    it("without --strict a page that omits pageStartIndex is accepted", async () => {
+      const { mockClient, program } = setup();
+      mockClient.get = vi.fn().mockResolvedValue(unechoedPage);
+      process.exitCode = 0;
+      await program.parseAsync(["node", "test", "jobs", "scan"]);
+      expect(process.exitCode ?? 0).toBe(0);
+    });
+
+    it("--strict applies strict pagination to a digest scan", async () => {
+      const { mockClient, logSpy, program } = setup();
+      mockClient.get = vi.fn().mockResolvedValue(unechoedPage);
+      process.exitCode = 0;
+      await program.parseAsync(["node", "test", "jobs", "scan", "--strict"]);
+      const printed = (logSpy.mock.calls.at(-1) ?? [""])[0] as string;
+      expect(printed).toContain("PARTIAL: invalid_page");
+      expect(process.exitCode).toBe(3);
+      process.exitCode = 0;
+    });
+
+    it("--enrich payments implies strict even without --strict", async () => {
+      const { mockClient, program } = setup();
+      mockClient.get = vi.fn().mockResolvedValue(unechoedPage);
+      process.exitCode = 0;
+      await program.parseAsync(["node", "test", "jobs", "scan", "--enrich", "payments"]);
+      expect(process.exitCode).toBe(3);
+      process.exitCode = 0;
+    });
+
     it("sets exit code 3 on partial coverage", async () => {
       const { mockClient, program } = setup();
       mockClient.get = vi.fn()
