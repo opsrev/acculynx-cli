@@ -28,31 +28,48 @@ jobs:
         with:
           release-type: node
 
+  # Publishes whenever package.json's version is not already on npm, not only
+  # when release-please reports a new release: a failed publish is then retried
+  # by the next push to main or a manual run instead of being lost.
+  # Auth is npm trusted publishing (OIDC via id-token: write), which needs
+  # npm >= 11.5.1 - hence Node 24 - and no NODE_AUTH_TOKEN.
   publish:
     needs: release-please
     runs-on: ubuntu-latest
-    if: ${{ needs.release-please.outputs.release_created }}
     steps:
       - uses: actions/checkout@v4
 
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 24
           registry-url: https://registry.npmjs.org
 
+      - name: Check whether this version is already on npm
+        id: check
+        run: |
+          VER=$(node -p "require('./package.json').version")
+          if npm view "@opsrev/acculynx-cli@$VER" version > /dev/null 2>&1; then
+            echo "@opsrev/acculynx-cli@$VER already on npm - skipping."
+            echo "publish=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "publish=true" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Install dependencies
+        if: steps.check.outputs.publish == 'true'
         run: npm ci
 
       - name: Build
+        if: steps.check.outputs.publish == 'true'
         run: npm run build
 
       - name: Run tests
+        if: steps.check.outputs.publish == 'true'
         run: npm test
 
       - name: Publish to npm
+        if: steps.check.outputs.publish == 'true'
         run: npm publish --access public
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
   publish-gpr:
     needs: release-please
@@ -89,7 +106,7 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 24
           registry-url: https://registry.npmjs.org
 
       - name: Publish acculynx-mcp wrapper if its version is new
@@ -102,5 +119,3 @@ jobs:
             echo "Publishing acculynx-mcp@$VER"
             npm publish --access public
           fi
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
