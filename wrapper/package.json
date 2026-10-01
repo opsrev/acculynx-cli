@@ -1,6 +1,6 @@
 {
   "name": "acculynx-mcp",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "AccuLynx MCP server — use the AccuLynx roofing CRM in Claude Desktop, Cursor, and any MCP client.",
   "type": "module",
   "bin": {
@@ -37,6 +37,6 @@
     "bin"
   ],
   "dependencies": {
-    "@opsrev/acculynx-cli": "^1.12.0"
+    "@opsrev/acculynx-cli": "^1.17.0"
   }
 }
