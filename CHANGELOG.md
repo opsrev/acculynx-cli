@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.17.1](https://github.com/opsrev/acculynx-cli/compare/v1.17.0...v1.17.1) (2026-10-01)
+
+
+### Bug Fixes
+
+* **ci:** publish to npm via trusted publishing and retry unpublished versions ([#63](https://github.com/opsrev/acculynx-cli/issues/63)) ([cb91291](https://github.com/opsrev/acculynx-cli/commit/cb91291901c437de4e9ff171fd6d19f2ca656c0e))
+
 ## [1.17.0](https://github.com/opsrev/acculynx-cli/compare/v1.16.1...v1.17.0) (2026-10-01)
 
 
