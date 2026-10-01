@@ -209,9 +209,67 @@ describe("strict evidence pagination", () => {
     expect((await scanJobs(clientFromPages([first, { count: 27, pageStartIndex: 25, items: [job("last")] }]), {}, { strict: true })).pageError).toBe("changing_inventory");
     expect((await scanJobs(clientFromPages([first, { count: 26, pageStartIndex: 25, items: [job("last")] }]), {}, { strict: true })).complete).toBe(true);
   });
+  it("rejects a page holding more jobs than the server count", async () => {
+    const result = await scanJobs(clientFromPages([{ count: 1, pageStartIndex: 0, items: [job("a1"), job("a2")] }]), {}, { strict: true });
+    expect(result.complete).toBe(false);
+    expect(result.pageError).toBe("count_mismatch");
+  });
   it("does not turn malformed history into an empty successful history", async () => {
     const result = await enrichJobs(clientFromPages([{}]), [{ id: "j1" }], ["dates"]);
     expect(result[0].errors[0].source).toBe("dates");
     expect(result[0].dates).toBeUndefined();
+  });
+});
+
+// --- payments enricher (issue #60) ------------------------------------------
+
+describe("enrichJobs: payments", () => {
+  const payment = {
+    id: "p1", from: "Check", checkNumber: "1538", paymentDate: "2025-05-08T04:00:00Z",
+    amount: 12000, notes: "", paymentType: "Received-Payment", isParent: true,
+  };
+  const body = (payments: unknown) => ({
+    paidPayments: { payments: [{ id: "paid-out" }], total: 1 },
+    receivedPayments: { payments, total: 12000 },
+    additionalExpenses: {},
+  });
+  const clientFor = (respond: (path: string) => unknown): ApiClient =>
+    ({ get: vi.fn(async (p: string) => respond(p)), post: vi.fn(), put: vi.fn(), postForm: vi.fn() }) as unknown as ApiClient;
+
+  it("attaches received payments verbatim from GET /jobs/{id}/payments", async () => {
+    const client = clientFor(() => body([payment]));
+    const out = await enrichJobs(client, [{ id: "j1" }], ["payments"]);
+    expect(client.get).toHaveBeenCalledWith("/jobs/j1/payments");
+    expect(out[0].payments).toEqual([payment]); // received only — never paidPayments
+    expect(out[0].errors).toEqual([]);
+  });
+
+  it("a job with no payments gets an empty list, not an error", async () => {
+    const out = await enrichJobs(clientFor(() => body([])), [{ id: "j1" }], ["payments"]);
+    expect(out[0].payments).toEqual([]);
+    expect(out[0].errors).toEqual([]);
+  });
+
+  it("a per-job failure is a payments ScanError; other jobs still enrich", async () => {
+    const client = clientFor((p) => {
+      if (p.includes("j2")) throw new Error("HTTP 500");
+      return body([payment]);
+    });
+    const out = await enrichJobs(client, [{ id: "j1" }, { id: "j2" }], ["payments"]);
+    expect(out[0].payments).toEqual([payment]);
+    expect(out[1].payments).toBeUndefined();
+    expect(out[1].errors).toEqual([{ jobId: "j2", source: "payments", message: "HTTP 500" }]);
+  });
+
+  it.each([
+    { name: "empty body", response: {} },
+    { name: "missing payments array", response: body(undefined) },
+    { name: "non-array payments", response: body("nope") },
+    { name: "null entry", response: body([null]) },
+    { name: "scalar entry", response: body([1]) },
+  ])("$name is invalid_payments, never an empty list", async ({ response }) => {
+    const out = await enrichJobs(clientFor(() => response), [{ id: "j1" }], ["payments"]);
+    expect(out[0].payments).toBeUndefined();
+    expect(out[0].errors).toEqual([{ jobId: "j1", source: "payments", message: "invalid_payments" }]);
   });
 });

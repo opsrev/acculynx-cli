@@ -140,6 +140,34 @@ JOB_ID=$(acculynx jobs list --limit 1 | jq -r '.[0].id')
 acculynx jobs get "$JOB_ID" | jq .
 ```
 
+### Monitoring scans: payments with strict coverage
+
+Scan every job in a set of milestones and fetch each one's received payments in
+one process, with a coverage line a script can check:
+
+```bash
+acculynx jobs scan --milestones Approved,Completed,Invoiced \
+  --enrich payments --strict --format jsonl --out payments.jsonl
+```
+
+Each job line carries `payments`: the job's full received-payment objects
+(`id`, `from`, `amount`, `paymentDate`, `checkNumber`, `notes`, …). The last
+line is the coverage receipt:
+
+```json
+{"type":"coverage","scanned":299,"serverCount":299,"complete":true,"pageError":null,"enrichErrors":0}
+```
+
+- `--strict` (implied by `--enrich payments`) treats any pagination anomaly
+  (changing total, duplicate job IDs, overfull or malformed pages) as a partial
+  scan. Partial scans exit 3 and report `complete: false`. Never treat them as
+  a full inventory.
+- A per-job payments failure doesn't abort the scan. It appears in that job's
+  `errors` (`{"jobId", "source": "payments", "message"}`) and counts toward
+  `enrichErrors`, so retry just those jobs with `acculynx jobs payments <id>`.
+- Without `--strict` and without `payments`, `jsonl` output is unchanged: job
+  lines only.
+
 ## Development
 
 ```bash
