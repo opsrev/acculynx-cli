@@ -140,6 +140,25 @@ JOB_ID=$(acculynx jobs list --limit 1 | jq -r '.[0].id')
 acculynx jobs get "$JOB_ID" | jq .
 ```
 
+### Prospect aging with complete readable rows
+
+```bash
+acculynx jobs scan --report prospect-aging --as-of 2026-10-20 --exclude-trade-type "Maintenance Program"
+```
+
+This bounded GET-only report ages **current** Prospect inventory by its full
+milestone date in America/New_York, with inclusive 0–30, 31–60, 61–90 and 91+
+calendar-day buckets. It is not a historical inventory snapshot. Exclusions use
+exact case-insensitive trade-type names; missing classification stays unknown.
+Every eligible row includes its full ID, date, age and separate approved/worksheet
+values in exact cents. Missing values remain unavailable rather than zero.
+
+Enumeration is strict and capped at 5,000 jobs before per-job financial reads.
+No history, payment, message or write requests are made. Invalid/incomplete
+inventory withholds totals and rows; missing dates or financial evidence make
+the result partial (exit 3). Incompatible filters and output modes fail before
+provider access (exit 2). Read long stdout through bounded process-log pages.
+
 ### Monitoring scans: payments with strict coverage
 
 Scan every job in a set of milestones and fetch each one's received payments in

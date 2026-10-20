@@ -32,7 +32,9 @@ interface Page { count?: number; items?: unknown[] }
  * digest can prove coverage. paginate() in api-helpers throws that count away,
  * which is exactly the number a scan exists to report — hence the local pager.
  */
-export async function scanJobs(client: ApiClient, filters: ScanFilters, options: { strict?: boolean } = {}): Promise<ScanResult> {
+export async function scanJobs(client: ApiClient, filters: ScanFilters, options: { strict?: boolean; maxJobs?: number } = {}): Promise<ScanResult> {
+  if (options.maxJobs !== undefined && (!Number.isSafeInteger(options.maxJobs) || options.maxJobs < 1))
+    throw new Error("maxJobs must be a positive integer");
   const params: Record<string, string> = { includes: "contact", sortBy: "CreatedDate" };
   if (filters.startDate) params.startDate = filters.startDate;
   if (filters.endDate) params.endDate = filters.endDate;
@@ -61,6 +63,9 @@ export async function scanJobs(client: ApiClient, filters: ScanFilters, options:
       if (page === null || typeof page !== "object") { pageError = "invalid_page"; break; }
       if (!Number.isSafeInteger(page.count) || page.count! < 0 || !Array.isArray(page.items) || page.items.length > PAGE_SIZE || page.pageStartIndex !== pageStartIndex) { pageError = "invalid_page"; break; }
       if (serverCount !== undefined && serverCount !== page.count) { pageError = "changing_inventory"; break; }
+      if (options.maxJobs !== undefined && page.count! > options.maxJobs) {
+        serverCount = page.count; pageError = "report_job_limit"; break;
+      }
       let invalidId = false;
       for (const item of page.items) {
         const id = item !== null && typeof item === "object" ? (item as Record<string, unknown>).id : undefined;

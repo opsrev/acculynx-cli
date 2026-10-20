@@ -27,6 +27,8 @@ jobs:
         run: npm test
 
       - name: Integration tests
+        # Live-account reads require an intentional dispatch; automatic checks use mocks.
+        if: github.event_name == 'workflow_dispatch'
         env:
           ACCULYNX_API_KEY: ${{ secrets.ACCULYNX_API_KEY }}
         run: ./test-integration.sh
