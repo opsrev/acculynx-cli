@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.18.1](https://github.com/opsrev/acculynx-cli/compare/v1.18.0...v1.18.1) (2026-10-20)
+
+
+### Bug Fixes
+
+* **scan:** bound aging report to retained process output ([#68](https://github.com/opsrev/acculynx-cli/issues/68)) ([6153728](https://github.com/opsrev/acculynx-cli/commit/6153728113377a08f90b9f73d6df6d78762285a7))
+
 ## [1.18.0](https://github.com/opsrev/acculynx-cli/compare/v1.17.1...v1.18.0) (2026-10-20)
 
 
