@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { AGING_BUCKETS, agingClassification, calendarDay, formatProspectAging, prospectAging } from "./scan-aging.js";
+import { AGING_BUCKETS, MAX_AGING_OUTPUT_CHARS, agingClassification, calendarDay, formatProspectAging, prospectAging } from "./scan-aging.js";
 import type { EnrichedJob } from "./scan.js";
 import type { ScanReport } from "./scan-digest.js";
 
@@ -98,8 +98,18 @@ describe("prospect aging", () => {
     const pages = Array.from({ length: Math.ceil(lines.length / 40) }, (_, i) => lines.slice(i * 40, (i + 1) * 40));
     expect(pages.flat()).toEqual(lines);
     expect(r.status).toBe("complete"); expect(r.counts).toMatchObject({ excluded: 183, eligible: 251 });
+    expect(formatProspectAging(r).length).toBeLessThan(MAX_AGING_OUTPUT_CHARS);
     expect(lines.filter(l => /^synthetic-\d+ \|/.test(l))).toHaveLength(251);
     expect(Object.values(r.counts!.buckets).reduce((a, b) => a + b, 0)).toBe(251);
+  });
+  it("fails closed before a detailed report can exceed retained process output", () => {
+    const jobs = Array.from({ length: 5000 }, (_, i) => entry(`synthetic-${i}`));
+    const r = build(jobs); const output = formatProspectAging(r);
+    expect(r.status).toBe("partial"); expect(r.issues).toContain("report_output_limit");
+    expect(r.counts?.eligible).toBe(5000); expect(r.rows).toEqual([]);
+    expect(output).toContain("no detailed list is asserted");
+    expect(output.length).toBeLessThan(MAX_AGING_OUTPUT_CHARS);
+    expect(output).not.toMatch(/^synthetic-/m);
   });
   it("handles empty inventory, rejects invalid options and keeps provider strings on a single data line", () => {
     expect(build([]).status).toBe("complete");

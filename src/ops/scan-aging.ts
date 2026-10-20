@@ -3,6 +3,8 @@ import type { ScanReport } from "./scan-digest.js";
 
 export const AGING_TIME_ZONE = "America/New_York";
 export const MAX_AGING_JOBS = 5000;
+// Leave headroom below OpenClaw's 200,000-character retained process output.
+export const MAX_AGING_OUTPUT_CHARS = 180000;
 export const AGING_BUCKETS = ["0–30", "31–60", "61–90", "91+"] as const;
 type Bucket = typeof AGING_BUCKETS[number];
 type Classification = "included" | "excluded" | "unknown";
@@ -126,6 +128,11 @@ export function prospectAging(report: ScanReport, asOf: string, exclusions: stri
   }
   result.counts = counts;
   result.status = result.rows.some(r => r.issues.length) ? "partial" : "complete";
+  if (formatProspectAging(result).length > MAX_AGING_OUTPUT_CHARS) {
+    result.status = "partial";
+    result.issues.push("report_output_limit");
+    result.rows = [];
+  }
   return result;
 }
 
@@ -139,6 +146,8 @@ export function formatProspectAging(report: AgingReport): string {
   lines.push(`Eligible ${c.eligible} · excluded ${c.excluded} · unknown classification ${c.unknownClassification}`,
     ...AGING_BUCKETS.map(b => `${b} days: ${c.buckets[b]}`), `Unknown age: ${c.unknownAge}`,
     "Approved recorded values and worksheet estimates are separate; neither is collected cash.");
+  if (report.issues.includes("report_output_limit")) return [...lines,
+    "Detailed rows exceed the retained process-output limit; no detailed list is asserted. Escalate to the operator without repeating the scan or using inline helpers."].join("\n");
   const money = (c: number | null) => c === null ? "unavailable" : new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(c / 100);
   for (const group of [...AGING_BUCKETS, "Unknown"] as const) {
     const rows = report.rows.filter(r => r.classification !== "excluded" && (group === "Unknown" ? !r.bucket : r.bucket === group));

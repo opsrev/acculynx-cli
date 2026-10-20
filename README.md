@@ -154,6 +154,8 @@ Every eligible row includes its full ID, date, age and separate approved/workshe
 values in exact cents. Missing values remain unavailable rather than zero.
 
 Enumeration is strict and capped at 5,000 jobs before per-job financial reads.
+Reports above 180,000 characters return partial with no detailed list, keeping
+output below the retained process-log limit.
 No history, payment, message or write requests are made. Invalid/incomplete
 inventory withholds totals and rows; missing dates or financial evidence make
 the result partial (exit 3). Incompatible filters and output modes fail before
