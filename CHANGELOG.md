@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.18.0](https://github.com/opsrev/acculynx-cli/compare/v1.17.1...v1.18.0) (2026-10-20)
+
+
+### Features
+
+* **scan:** add bounded Prospect aging report ([#66](https://github.com/opsrev/acculynx-cli/issues/66)) ([2d94bf4](https://github.com/opsrev/acculynx-cli/commit/2d94bf4149955c5cc6d01702a4cb3bd9956a530e))
+
 ## [1.17.1](https://github.com/opsrev/acculynx-cli/compare/v1.17.0...v1.17.1) (2026-10-01)
 
 
