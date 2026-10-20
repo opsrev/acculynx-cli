@@ -29,6 +29,7 @@ import {
 import { scanJobs, enrichJobs, ENRICHERS, type Enricher, type ScanFilters } from "../ops/scan.js";
 import { formatScanDigest, formatScanJsonl } from "../ops/scan-digest.js";
 import { marketingEvidence } from "../ops/scan-marketing.js";
+import { agingClassification, calendarDay, formatProspectAging, prospectAging, MAX_AGING_JOBS } from "../ops/scan-aging.js";
 
 // Commander option collector: accumulate repeated flags into an array.
 function collect(value: string, previous: string[]): string[] {
@@ -83,7 +84,36 @@ export function registerJobsCommands(
     .option("--format <fmt>", "digest, jsonl, or marketing-evidence (private operator data)", "digest")
     .option("--out <path>", "Also write full jsonl to this file")
     .option("--strict", "Strict coverage: any pagination anomaly makes the scan partial (exit 3), and jsonl output ends with a {\"type\":\"coverage\"} line. Implied by --enrich payments")
+    .option("--report <name>", "Bounded readable report: prospect-aging")
+    .option("--as-of <date>", "Aging calendar date (YYYY-MM-DD), America/New_York")
+    .option("--exclude-trade-type <name>", "Exact trade-type name to exclude from prospect-aging (repeatable)", collect, [])
     .action(async (opts) => {
+      if (opts.report || opts.asOf || opts.excludeTradeType.length) {
+        const enrichInput = String(opts.enrich ?? "").split(",").map((s: string) => s.trim()).filter(Boolean);
+        if (opts.report !== "prospect-aging" || !calendarDay(String(opts.asOf ?? "")) || opts.out || opts.format !== "digest"
+            || opts.tradeType.length || opts.startDate || opts.endDate || opts.dateFilterType || opts.assignment
+            || (opts.milestones && opts.milestones.toLowerCase() !== "prospect")
+            || enrichInput.some((e: string) => !["financials"].includes(e))) {
+          console.error("prospect-aging requires --as-of YYYY-MM-DD and current Prospect inventory; format/out, date/assignment/include-trade filters and other enrichers are unavailable");
+          process.exitCode = 2; return;
+        }
+        // Validate exclusions before any provider access.
+        try { prospectAging({ filters: {}, enrich: [], jobs: [], scanned: 0, serverCount: 0, complete: true }, opts.asOf, opts.excludeTradeType); }
+        catch (error) { console.error(error instanceof Error ? error.message : "Invalid aging options"); process.exitCode = 2; return; }
+        const filters: ScanFilters = { milestones: "Prospect" };
+        const client = getClient();
+        const result = await scanJobs(client, filters, { strict: true, maxJobs: MAX_AGING_JOBS });
+        // The current list milestoneDate is authoritative; no per-job history requests.
+        // Excluded/unknown classifications need no financial reads.
+        const selected = result.complete ? result.jobs.filter(j => agingClassification(j, opts.excludeTradeType) === "included") : [];
+        const enriched = await enrichJobs(client, selected, ["financials"]);
+        const byId = new Map(enriched.map(e => [e.job.id, e]));
+        const report = prospectAging({ filters, enrich: ["financials"], jobs: result.jobs.map(job => byId.get(job.id) ?? { job, errors: [] }),
+          scanned: result.scanned, serverCount: result.serverCount, complete: result.complete, pageError: result.pageError }, opts.asOf, opts.excludeTradeType);
+        console.log(formatProspectAging(report));
+        if (report.status !== "complete") process.exitCode = 3;
+        return;
+      }
       const enrich = String(opts.enrich ?? "").split(",").map((s: string) => s.trim()).filter(Boolean) as Enricher[];
       const badEnricher = enrich.find((e) => !ENRICHERS.includes(e));
       if (badEnricher) {
