@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.18.2](https://github.com/opsrev/acculynx-cli/compare/v1.18.1...v1.18.2) (2026-10-27)
+
+
+### Bug Fixes
+
+* **mcp:** tolerate model-filled work-type and trade-type arguments ([#70](https://github.com/opsrev/acculynx-cli/issues/70)) ([0e0bc23](https://github.com/opsrev/acculynx-cli/commit/0e0bc2335fd09bf45ad02530d8a10dacc870f005))
+
 ## [1.18.1](https://github.com/opsrev/acculynx-cli/compare/v1.18.0...v1.18.1) (2026-10-20)
 
 
