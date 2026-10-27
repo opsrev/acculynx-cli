@@ -201,24 +201,28 @@ export async function handleToolCall(
       case "acculynx_jobs_trade_types":
         return ok(await companyTradeTypes(client));
       case "acculynx_jobs_set_work_type": {
-        const nameGiven = args.workType !== undefined;
-        const idGiven = args.workTypeId !== undefined;
-        if (nameGiven && idGiven) throw new Error("Provide either workType or workTypeId, not both");
-        if (!nameGiven && !idGiven) throw new Error("Provide workType (name) or workTypeId");
-        const workTypeId = nameGiven
-          ? await resolveWorkTypeId(client, str(args.workType) ?? "")
-          : num(args.workTypeId) ?? 0;
+        // Models that fill every optional field send "" or 0 placeholders; those are not values.
+        const name = str(args.workType)?.trim();
+        const givenId = num(args.workTypeId);
+        const idGiven = givenId !== undefined && givenId > 0;
+        if (!name && !idGiven) throw new Error("Provide workType (name) or workTypeId");
+        const workTypeId = name ? await resolveWorkTypeId(client, name) : givenId ?? 0;
+        if (name && idGiven && givenId !== workTypeId) {
+          throw new Error(`workType "${name}" is id ${workTypeId}, but workTypeId ${givenId} was also given; send only one`);
+        }
         return ok(await jobSetWorkType(client, str(args.jobId) ?? "", workTypeId));
       }
       case "acculynx_jobs_set_trade_types": {
-        const namesGiven = args.tradeTypes !== undefined;
-        const idsGiven = args.tradeTypeIds !== undefined;
-        if (namesGiven && idsGiven) throw new Error("Provide either tradeTypes or tradeTypeIds, not both");
-        if (!namesGiven && !idsGiven) throw new Error("Provide tradeTypes (names) or tradeTypeIds (an empty array unassigns all)");
-        const names = strArray(args.tradeTypes);
-        const ids = namesGiven
-          ? names.length > 0 ? await resolveTradeTypeIds(client, names) : []
-          : strArray(args.tradeTypeIds);
+        const names = strArray(args.tradeTypes).map((n) => n.trim()).filter(Boolean);
+        const givenIds = strArray(args.tradeTypeIds);
+        if (args.tradeTypes === undefined && args.tradeTypeIds === undefined) {
+          throw new Error("Provide tradeTypes (names) or tradeTypeIds (an empty array unassigns all)");
+        }
+        // An empty array beside names is a placeholder; both empty still unassigns all.
+        const ids = names.length > 0 ? await resolveTradeTypeIds(client, names) : givenIds;
+        if (names.length > 0 && givenIds.length > 0 && [...ids].sort().join() !== [...givenIds].sort().join()) {
+          throw new Error(`tradeTypes resolve to ${JSON.stringify(ids)}, but tradeTypeIds ${JSON.stringify(givenIds)} were also given; send only one`);
+        }
         return ok(await jobSetTradeTypes(client, str(args.jobId) ?? "", ids));
       }
       case "acculynx_jobs_document_folders":
