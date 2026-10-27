@@ -118,6 +118,75 @@ describe("jobs + ping dispatch", () => {
     expect(calls.find((c) => c.m === "put")).toMatchObject({ m: "put", path: "/jobs/j-1/trade-types", arg: { tradeTypeIds: ["uuid-win", "uuid-roof"] } });
   });
 
+  // Some models fill every optional argument, so placeholder values must not count as given.
+  it("acculynx_jobs_set_work_type ignores a placeholder workTypeId of 0 alongside a name", async () => {
+    const { client, calls } = fakeClient();
+    client.get = vi.fn(async (path: string) => {
+      calls.push({ m: "get", path });
+      return { count: 1, pageSize: 25, pageStartIndex: 0, items: [{ id: 7, name: "1. New Construction" }] };
+    });
+    const res = await handleToolCall({ name: "acculynx_jobs_set_work_type", args: { jobId: "j-1", workType: "1. New Construction", workTypeId: 0 } }, () => client);
+    expect(res.isError).toBeUndefined();
+    expect(calls.find((c) => c.m === "put")).toMatchObject({ arg: { workTypeId: 7 } });
+  });
+
+  it("acculynx_jobs_set_work_type ignores a blank workType alongside an id", async () => {
+    const { client, calls } = fakeClient();
+    await handleToolCall({ name: "acculynx_jobs_set_work_type", args: { jobId: "j-1", workType: " ", workTypeId: 3 } }, () => client);
+    expect(calls.find((c) => c.m === "put")).toMatchObject({ arg: { workTypeId: 3 } });
+  });
+
+  it("acculynx_jobs_set_work_type accepts a name and id that agree", async () => {
+    const { client, calls } = fakeClient();
+    client.get = vi.fn(async (path: string) => {
+      calls.push({ m: "get", path });
+      return { count: 1, pageSize: 25, pageStartIndex: 0, items: [{ id: 7, name: "1. New Construction" }] };
+    });
+    const res = await handleToolCall({ name: "acculynx_jobs_set_work_type", args: { jobId: "j-1", workType: "1. New Construction", workTypeId: 7 } }, () => client);
+    expect(res.isError).toBeUndefined();
+    expect(calls.find((c) => c.m === "put")).toMatchObject({ arg: { workTypeId: 7 } });
+  });
+
+  it("acculynx_jobs_set_work_type rejects a name and id that disagree without writing", async () => {
+    const { client, calls } = fakeClient();
+    client.get = vi.fn(async (path: string) => {
+      calls.push({ m: "get", path });
+      return { count: 1, pageSize: 25, pageStartIndex: 0, items: [{ id: 7, name: "1. New Construction" }] };
+    });
+    const res = await handleToolCall({ name: "acculynx_jobs_set_work_type", args: { jobId: "j-1", workType: "1. New Construction", workTypeId: 7800 } }, () => client);
+    expect(res.isError).toBe(true);
+    expect(JSON.stringify(res)).toContain("id 7");
+    expect(calls.some((c) => c.m === "put")).toBe(false);
+  });
+
+  it("acculynx_jobs_set_trade_types ignores an empty tradeTypeIds array alongside names", async () => {
+    const { client, calls } = fakeClient();
+    client.get = vi.fn(async (path: string) => {
+      calls.push({ m: "get", path });
+      return { count: 1, pageSize: 25, pageStartIndex: 0, items: [{ id: "uuid-metal", name: "Metal Roofs" }] };
+    });
+    const res = await handleToolCall({ name: "acculynx_jobs_set_trade_types", args: { jobId: "j-1", tradeTypes: ["Metal Roofs"], tradeTypeIds: [] } }, () => client);
+    expect(res.isError).toBeUndefined();
+    expect(calls.find((c) => c.m === "put")).toMatchObject({ arg: { tradeTypeIds: ["uuid-metal"] } });
+  });
+
+  it("acculynx_jobs_set_trade_types still unassigns all when both arrays are empty", async () => {
+    const { client, calls } = fakeClient();
+    await handleToolCall({ name: "acculynx_jobs_set_trade_types", args: { jobId: "j-1", tradeTypes: [], tradeTypeIds: [] } }, () => client);
+    expect(calls.find((c) => c.m === "put")).toMatchObject({ arg: { tradeTypeIds: [] } });
+  });
+
+  it("acculynx_jobs_set_trade_types rejects names and ids that disagree without writing", async () => {
+    const { client, calls } = fakeClient();
+    client.get = vi.fn(async (path: string) => {
+      calls.push({ m: "get", path });
+      return { count: 1, pageSize: 25, pageStartIndex: 0, items: [{ id: "uuid-metal", name: "Metal Roofs" }] };
+    });
+    const res = await handleToolCall({ name: "acculynx_jobs_set_trade_types", args: { jobId: "j-1", tradeTypes: ["Metal Roofs"], tradeTypeIds: ["uuid-tile"] } }, () => client);
+    expect(res.isError).toBe(true);
+    expect(calls.some((c) => c.m === "put")).toBe(false);
+  });
+
   it("acculynx_jobs_set_work_type errors when neither workType nor workTypeId is given", async () => {
     const { client } = fakeClient();
     const res = await handleToolCall({ name: "acculynx_jobs_set_work_type", args: { jobId: "j-1" } }, () => client);
